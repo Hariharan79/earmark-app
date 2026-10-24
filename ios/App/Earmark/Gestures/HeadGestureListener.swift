@@ -21,6 +21,9 @@ final class HeadGestureListener {
     var isAvailable: Bool { manager.isDeviceMotionAvailable }
     /// Tunable live on the demo phone; applies from the next prompt.
     var config = HeadGestureClassifier.Config()
+    /// Peak speeds in the last answer, shown by the start-screen gesture test for tuning `config`.
+    private(set) var lastFastestPitch = 0.0
+    private(set) var lastFastestYaw = 0.0
 
     @ObservationIgnored private let manager = CMHeadphoneMotionManager()
     @ObservationIgnored private let connectionDelegate = ConnectionDelegate()
@@ -138,6 +141,8 @@ final class HeadGestureListener {
         manager.stopDeviceMotionUpdates()
         // Peak speeds per prompt are what to read in Console when tuning `config` on the demo phone.
         let pitch = current.fastestPitch, yaw = current.fastestYaw
+        lastFastestPitch = pitch
+        lastFastestYaw = yaw
         logger.info(
             "Prompt answer \(String(describing: answer), privacy: .public); fastest pitch \(pitch, format: .fixed(precision: 2)) rad/s, yaw \(yaw, format: .fixed(precision: 2)) rad/s"
         )

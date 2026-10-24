@@ -68,7 +68,12 @@ struct EventScreen: View {
             Button("Start event") { Task { await model.startEvent() } }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
-                .disabled(!model.engineLinked)
+                .disabled(!model.engineLinked || model.isTestingGesture)
+            Button(model.isTestingGesture ? "Listening for a nod or shake…" : "Test nod / shake") {
+                Task { await model.testGesture() }
+            }
+            .buttonStyle(.bordered)
+            .disabled(model.isTestingGesture)
         case .enrolling, .running:
             Button("End event", role: .destructive) { Task { await model.endEvent() } }
                 .buttonStyle(.bordered)

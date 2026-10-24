@@ -22,6 +22,7 @@ final class AppModel {
     /// Last thing worth showing on screen (warnings, errors, "Is this Priya?").
     private(set) var statusMessage: String?
     var demoMode = true
+    private(set) var isTestingGesture = false
 
     var routeDescription: String { session.routeDescription }
     var airPodsMotionConnected: Bool { gestures.isConnected }
@@ -44,7 +45,7 @@ final class AppModel {
     }
 
     func startEvent() async {
-        guard let engine, phase == .idle else { return }
+        guard let engine, phase == .idle, !isTestingGesture else { return }
         guard await AudioSessionController.requestMicPermission() else {
             statusMessage = "Microphone access is off. Turn it on in Settings → Earmark."
             return
@@ -90,6 +91,32 @@ final class AppModel {
         phase = .idle
     }
 
+    /// One nod/shake with the same listener and timeout as a real prompt, so thresholds can be
+    /// checked and tuned on the phone without waiting for the engine to ask.
+    func testGesture() async {
+        guard phase == .idle, !isTestingGesture else { return }
+        isTestingGesture = true
+        defer { isTestingGesture = false }
+        do {
+            try session.activate()
+        } catch {
+            logger.error("Couldn't start audio for the gesture test: \(error.localizedDescription)")
+            statusMessage = "Couldn't start audio: \(error.localizedDescription)"
+            return
+        }
+        defer { session.deactivate() }
+
+        statusMessage = WhisperLines.gestureTestPrompt
+        await say(WhisperLines.gestureTestPrompt)
+        let answer = await gestures.waitForAnswer()
+        let result = WhisperLines.gestureTestResult(answer)
+        statusMessage = String(
+            format: "Heard: %@ (fastest nod %.2f, shake %.2f rad/s; a swing counts from %.1f)",
+            result, gestures.lastFastestPitch, gestures.lastFastestYaw, gestures.config.nodMinPeakRate
+        )
+        await say(result)
+    }
+
     /// Keeps asking until the engine accepts the recording, or the event is ended.
     private func enrollWearer(_ engine: any EarmarkEngine) async -> Bool {
         var prompt = WhisperLines.enrollmentPrompt
@@ -131,6 +158,7 @@ final class AppModel {
     }
 
     private func handle(_ event: EngineEvent, engine: any EarmarkEngine) async {
+        logger.info("Engine event: \(String(describing: event))")
         people = PeopleRoster.applying(event, to: people)
         switch event {
         case .personSaved, .personUpdated:
@@ -141,6 +169,7 @@ final class AppModel {
             statusMessage = text
             await say(text)
             let answer = await gestures.waitForAnswer()
+            logger.info("Wearer answered \(String(describing: answer)) to \"\(text)\"")
             statusMessage = nil
             await engine.answerPrompt(id: promptID, answer: answer)
         case let .warning(message):

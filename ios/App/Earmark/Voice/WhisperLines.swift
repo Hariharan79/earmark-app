@@ -1,3 +1,4 @@
+import EarmarkShared
 import Foundation
 
 /// The only sentences the app builds itself. Anything about a person comes from the engine
@@ -16,6 +17,17 @@ nonisolated enum WhisperLines {
 
     /// The engine said it was too noisy. Its reason goes on screen, this goes in the ear.
     static let enrollmentRetry = "Too noisy. Please read the sentence again."
+
+    /// Start-screen check that nods and shakes are caught, before relying on them in an event.
+    static let gestureTestPrompt = "Nod or shake your head."
+
+    static func gestureTestResult(_ answer: PromptAnswer) -> String {
+        switch answer {
+        case .yes: "Nod."
+        case .no: "Shake."
+        case .timeout: "Nothing."
+        }
+    }
 
     static func deleted(count: Int) -> String {
         count == 1 ? "Deleted 1 person." : "Deleted \(count) people."

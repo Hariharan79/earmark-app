@@ -1,3 +1,4 @@
+import EarmarkShared
 import Testing
 @testable import Earmark
 
@@ -35,5 +36,17 @@ struct WhisperLinesTests {
 
         #expect(!words.isEmpty)
         #expect(words.count <= 12)
+    }
+
+    @Test(
+        "Gesture test says what it heard",
+        arguments: [
+            (PromptAnswer.yes, "Nod."),
+            (.no, "Shake."),
+            (.timeout, "Nothing."),
+        ]
+    )
+    func gestureTestResult(answer: PromptAnswer, expected: String) {
+        #expect(WhisperLines.gestureTestResult(answer) == expected)
     }
 }

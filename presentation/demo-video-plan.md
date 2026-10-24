@@ -1,7 +1,7 @@
 # Earmark: concept video plan (final, split-screen, ≤ 2:00)
 
 - **Format:** split screen. **Left = Without Earmark. Right = With Earmark.** Same moment, two outcomes.
-- **No filming.** Every scene is generated. This is a **concept video**, not a recording of the app (see integrity rules).
+- **No filming.** Every scene is generated, except one real screenshot of the app's people-met screen (S6). This is a **concept video**, not a recording of the app (see integrity rules).
 - **Tools (free path):**
   - **Kling** (web) generates the scene clips (~10 s each).
   - **Clipchamp** (built into Windows) builds the split screen, text cards, captions, voiceover (text-to-speech), and export.
@@ -48,6 +48,7 @@ Founder judges see the value in one glance: on the left, the name is lost and th
 | D2 | Setup: phone held at your side, earbud in, never looked at | §6.1 (changed: handheld, not lanyard) | S3 |
 | D3 | Start once, read one sentence, chime | §5 | S3 |
 | D4 | New people saved silently | §5, §6.3 | S4, S5 |
+| D4b | What gets saved, and where: name + note, on the phone only (real app screen) | §8, §8.1, §13 | S6 |
 | D5 | Re-meet whisper within ~3 s | §5 | S7 (split) |
 | D6 | When unsure, it asks instead of guessing | §7.2, §7.3 | S8 (split) |
 | D7 | End = wiped ("Deleted 3 people") | §5, §13 | S9 |
@@ -59,7 +60,7 @@ Founder judges see the value in one glance: on the left, the name is lost and th
 
 ## 3. Final shot list (target 1:55)
 
-`[K]` = generate in Kling. `[C]` = make in Clipchamp (text card, no generation). Split shots need two Kling clips: **L** and **R**.
+`[K]` = generate in Kling. `[C]` = make in Clipchamp (text card, no generation). `[R]` = real capture from the actual app (see section 5.1). Split shots need two Kling clips: **L** and **R**.
 
 | Shot | Time | Layout | Visual | Voiceover (VO) / whisper | On-screen text |
 |---|---|---|---|---|---|
@@ -69,8 +70,8 @@ Founder judges see the value in one glance: on the left, the name is lost and th
 | S3 | 0:20–0:32 | Full `[K]` | He puts in one white earbud, taps the phone once, reads a sentence from a card, then lowers the phone to his side, screen toward his leg | VO: "Earbud in. Tap once, read one sentence, and it knows your voice. Then the phone goes down, and you never look at it again." | "Never look at the screen." |
 | S4 | 0:32–0:42 | Full `[K]` | Priya shakes his hand: "Hi, I'm Priya, I work on robotics at Stanford." | VO: "You meet people like normal." | — |
 | S5 | 0:42–0:52 | Full `[K]` | Marcus, hoodie and badge: "Hey, I'm Marcus, I'm building a fintech app." | VO: "Earmark saves each new person quietly. No buttons, no notes." | "Saved silently" |
-| S6 | 0:52–0:56 | Full `[C]` | Black card | — | "Later…" |
-| S7 | 0:56–1:12 | **Split `[K]` L+R** | Priya walks back: "Oh, hey again!" **L:** he forces a smile, then lifts the phone in his hand and looks down at it, scrolling mid-conversation. She notices. **R:** same phone, same hand, but it stays down at his side; he keeps eye contact and greets her by name | **R whisper (left ear):** "That's Priya, robotics at Stanford." R wearer: "Priya! How's the robotics work going?" | `🎧 "That's Priya, robotics at Stanford."` (right half only) |
+| S6 | 0:52–0:58 | Full `[R]` | **Real screenshot** of the app's people-met screen showing Priya and Marcus with their notes, framed on a dark background with a slow zoom. Then "Later…" fades in | VO: "Each person is saved with their name and a short note, on your phone only. No audio, just a voice signature." | "Real app screen" (small, bottom corner) · "Saved on your phone" · then "Later…" |
+| S7 | 0:58–1:12 | **Split `[K]` L+R** | Priya walks back: "Oh, hey again!" **L:** he forces a smile, then lifts the phone in his hand and looks down at it, scrolling mid-conversation. She notices. **R:** same phone, same hand, but it stays down at his side; he keeps eye contact and greets her by name | **R whisper (left ear):** "That's Priya, robotics at Stanford." R wearer: "Priya! How's the robotics work going?" | `🎧 "That's Priya, robotics at Stanford."` (right half only) |
 | S8 | 1:12–1:30 | **Split `[K]` L+R** | A new man who looks a bit like Marcus walks up. **L:** he guesses: "Marcus, right?" The man frowns: "…No, I'm Daniel." Awkward. **R:** he pauses, gives a small head shake | **R whisper:** "Is this Marcus?" VO: "Guessing gets names wrong. A wrong name is worse than no name, so Earmark asks when it isn't sure. A nod means yes. A shake saves someone new." | L: "Guessing" · R: `🎧 "Is this Marcus?"` then "Saved as someone new" |
 | S9 | 1:30–1:44 | Full `[K]` | He leaves the event and taps the phone in his hand once without looking at it. Soft fade | **Whisper:** "Deleted 3 people." VO: "When the event ends, everything is deleted. No audio is ever stored, and it all runs on the phone." | "No audio stored · On-device · Wiped at the end" |
 | S10 | 1:44–1:55 | **Split → full `[C]`** | Freeze frames: L ends on the awkward face from S7, R on the warm handshake. The split slides away to a black end card | VO: "Earmark. Never lose a name again." | **Earmark** · Hari · Sandy · Jiwon · "Concept visualization · AI-generated · Live demo at judging" |
@@ -83,6 +84,8 @@ Notes:
 - S3 and S9 show a **tap** to start and end. The PRD also mentions "Hey Siri, end Earmark," but that is P1. Only add the Siri line if it's actually built.
 - S8 shows the nod/shake prompt (P0 in the PRD). If the team doesn't want to show it, cut S8 and extend S7.
 - "Deleted 3 people" counts Priya, Marcus, and Daniel.
+- S6 is the only real footage in the video. **Never mock up the people-met screen.** If no real screenshot exists by edit time, S6 falls back to a black "Later…" card (0:52–0:56) and S7 starts at 0:56.
+- The people-met screen is there for viewers and judges. The wearer never looks at it during the event, which is why S6 sits between scenes instead of inside one.
 
 ---
 
@@ -249,13 +252,25 @@ Photoreal, evening startup networking mixer in a modern university hall, warm st
 
 1. Import all Kling clips and voice tracks.
 2. For each split shot: put L and R on two video tracks, crop each to half width (left half / right half), and add the `WITHOUT EARMARK` / `WITH EARMARK` labels.
-3. Add the text cards: S0, S2, S6, S10.
+3. Add the text cards: S0, S2, S10. Add S6 from the real screenshot (section 5.1), or the "Later…" fallback card.
 4. Lay voiceover and whispers on audio tracks; lower the clip/room audio during whispers.
 5. Add captions for every spoken line; whisper captions in italics with 🎧, right half only.
 6. Add a quiet music bed under the voiceover (Clipchamp stock), louder only on S10.
 7. Check the total is ≤ 2:00, then export 1080p.
 
 ---
+
+### 5.1 Capturing the S6 screenshot (real app)
+
+Owner: Sandy's phone, once the app and engine are linked.
+1. On Sandy's phone, start an event with demo mode on and enroll Sandy.
+2. Two volunteers introduce themselves exactly as in the script: "Hi, I'm Priya, I work on robotics at Stanford." / "Hey, I'm Marcus, I'm building a fintech app." (Use these names so the screen matches the video. They're the volunteers' scripted demo names.)
+3. When both rows appear on the people-met screen, take a screenshot (side button + volume up).
+4. Before using it, check: no notifications, no personal info, no debug text you don't want shown. Crop rather than edit pixels. Don't change any names or notes in the image.
+5. Send it to whoever is editing in Clipchamp.
+6. End the event so both people are deleted.
+
+If a row comes out wrong (e.g. "Unnamed"), that's the real result: either use it as it is or use the fallback card. Don't retouch it.
 
 ## 6. Before export, check
 
@@ -267,4 +282,5 @@ Photoreal, evening startup networking mixer in a modern university hall, warm st
 - [ ] No invented numbers, no logos, no real people's likenesses
 - [ ] 🎧 caption on every whisper
 - [ ] S3/S9 match what's actually built (tap vs Siri)
+- [ ] S6 is a real, unedited app screenshot labeled "Real app screen" (or the fallback card)
 - [ ] Total ≤ 2:00

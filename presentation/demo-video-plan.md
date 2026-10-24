@@ -44,18 +44,6 @@ Founder judges see the value in one glance: on the left, the name is lost and th
 
 | # | Item | PRD | Where |
 |---|---|---|---|
-<<<<<<< Updated upstream
-| D1 | The problem | §1 | Someone walks back up and the name is gone. Founder stakes: investor, hire, customer |
-| D2 | The setup | §6.1 | Just holding our phone, mic facing out. Earbuds in. Nothing in hand |
-| D3 | Start once | §5 | One tap, then reads one sentence so it learns the wearer's voice. Chime |
-| D4 | Meet new people, silently | §5, §6.3 | Priya and Marcus introduce themselves. **Nothing** happens in the wearer's ear. They're saved quietly |
-| D5 | The re-meet whisper | §5 | Priya returns. Within ~3 s the wearer hears **"That's Priya, robotics at Stanford."** Wearer greets her by name |
-| D6 | When unsure, it asks | §7.2, §7.3 | A similar voice. Whisper: **"Is this Marcus?"** Wearer shakes head → saved as someone new |
-| D7 | End = wiped | §5, §13 | "End event" → whisper **"Deleted 3 people."** |
-| D8 | Privacy | §13 | No audio stored. Runs on the phone. Gone when the event ends |
-| D9 | Why it doesn't guess | §4 | "A wrong name is worse than no name." |
-| D10 | Label + close | — | Concept label, product name, one-line promise, team |
-=======
 | D1 | The problem: someone returns and the name is gone (founder stakes) | §1 | S1 (split) |
 | D2 | Setup: phone held at your side, earbud in, never looked at | §6.1 (changed: handheld, not lanyard) | S3 |
 | D3 | Start once, read one sentence, chime | §5 | S3 |
@@ -66,7 +54,6 @@ Founder judges see the value in one glance: on the left, the name is lost and th
 | D8 | Privacy: no audio stored, on-device, wiped at the end | §13 | S9 |
 | D9 | "A wrong name is worse than no name" | §4 | S8 |
 | D10 | Concept label + close | — | S0, S10 |
->>>>>>> Stashed changes
 
 ---
 

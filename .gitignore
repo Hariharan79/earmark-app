@@ -12,5 +12,9 @@ xcuserdata/
 *.xcuserstate
 build/
 
+# SwiftPM
+.build/
+.swiftpm/
+
 # macOS
 .DS_Store

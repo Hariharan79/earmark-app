@@ -2,7 +2,7 @@
 
 This is the contract between the app (Hari, then Sandy) and the engine (Sandy). It gets written as Swift in `ios/Shared/` at 0:00-0:30 and **frozen at 0:30**. After that, change it only when both of you agree.
 
-This is a description, not code. The exact Swift names get settled at hour 0.
+The Swift version is the `EarmarkShared` package in `ios/Shared/` (`EarmarkEngine` protocol + `EngineEvent`). Both the app target and the Engine package depend on it. If this doc and the Swift disagree, the Swift wins.
 
 ## App → Engine (things the app calls)
 
@@ -31,4 +31,5 @@ This is a description, not code. The exact Swift names get settled at hour 0.
 - The engine never plays sound and never touches the audio session. The app never decides who someone is.
 - The engine sends whisper text ready to speak, so the app doesn't build sentences.
 - Settings the engine owns (thresholds, re-meet gap, Jev on/off) live in one config struct inside the engine, and demo mode switches the re-meet gap to 20 s.
-- For 1:00-2:15, the app uses a **fake engine** that returns scripted events, so Hari isn't blocked waiting on Sandy.
+- No fake engine. The app links the real Engine package as soon as it compiles and is tested against whatever it can do at that point.
+- `feed` is a plain (non-async) call made from the mic thread. If the engine is an actor, mark `feed` `nonisolated` and hop onto the actor inside it.

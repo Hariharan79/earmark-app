@@ -161,80 +161,98 @@ If Kling generates audio, mute it in Clipchamp and use the voiceover and whisper
 
 ### 4.4 Ready-to-paste prompts (one per clip, in generation order)
 
-Copy one block into Kling per clip. Each block already includes the shared scene line, color grade, and phone pose. All are under Kling's 2,500-character limit.
+Copy one block into Kling per clip. Each block is self-contained: it describes every person by appearance (Kling doesn't know the names Priya, Marcus, Daniel, or "Version A/B"), and already includes the scene line, color grade, and phone pose. All are under Kling's 2,500-character limit.
 
-**Step 0: Character sheet** (755 chars). Generate first; save the images to use as references.
+**Step 0: Character images.** Generate these five portraits first and save them. Attach the listed ones as reference images when you generate each clip, so the people look the same in every shot.
 
-```
-Character reference sheet, photoreal, neutral studio light, front and 3/4 views, plain background:
-1) "The wearer": a man in his late 20s, startup-founder casual (navy quarter-zip, dark jeans),
-   short dark hair, holding a smartphone loosely in his right hand, arm relaxed at his side,
-   screen facing his leg. Version A: no earbuds. Version B: one white wireless earbud in his left ear.
-2) "Priya": a woman in her late 20s, friendly, navy blazer over a white top, a conference badge.
-3) "Marcus": a man in his early 30s, grey hoodie, lanyard badge, relaxed.
-4) "Daniel": a man in his early 30s, similar build and hair to Marcus but clearly a different
-   person, olive bomber jacket, lanyard badge.
-Fictional people. No logos on any clothing or device.
-```
-
-**1. S7-R: Re-meet, right (With)** (576 chars) · reference: wearer Version B (earbud), plus the other characters in the shot
+**0a. The wearer, no earbud (for left clips)** (338 chars)
 
 ```
-Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Medium two-shot, same framing as S7-L. Priya walks back and waves. The wearer (Version B) pauses for a beat as if listening, then keeps eye contact, smiles, and greets her warmly. The phone stays down at his side the whole time; he never looks at it. 10 s.
+Photoreal character portrait, full body, front view, neutral studio light, plain light-grey background, fictional person, no logos on clothing or devices. a man in his late 20s (navy quarter-zip, dark jeans, short dark hair), with no earbuds, holding a smartphone loosely in his right hand, arm relaxed at his side, screen facing his leg.
 ```
 
-**2. S7-L: Re-meet, left (Without)** (514 chars) · reference: wearer Version A (no earbud), plus the other characters in the shot
+**0b. The wearer, with earbud (for right and full-screen clips)** (369 chars)
 
 ```
-Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Slightly cool, desaturated color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. Medium two-shot. Priya walks back and waves. The wearer (Version A) forces a smile, then lifts the phone in his hand and looks down at it, scrolling, mid-conversation. Priya notices and looks slightly put off. 10 s.
+Photoreal character portrait, full body, front view, neutral studio light, plain light-grey background, fictional person, no logos on clothing or devices. a man in his late 20s (navy quarter-zip, dark jeans, short dark hair), with one white wireless earbud in his left ear, holding a smartphone loosely in his right hand, arm relaxed at his side, screen facing his leg.
 ```
 
-**3. S1-R: Hook, right (With)** (541 chars) · reference: wearer Version B (earbud), plus the other characters in the shot
+**0c. Priya** (237 chars)
 
 ```
-Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Same framing. Priya walks toward the wearer (Version B), smiling. He lights up, greets her warmly, shifts the phone to his left hand at his side without looking at it, and shakes her hand with his right; she laughs. 10 s.
+Photoreal character portrait, full body, front view, neutral studio light, plain light-grey background, fictional person, no logos on clothing or devices. a friendly woman in her late 20s (navy blazer over a white top, conference badge).
 ```
 
-**4. S1-L: Hook, left (Without)** (456 chars) · reference: wearer Version A (no earbud), plus the other characters in the shot
+**0d. Marcus** (215 chars)
 
 ```
-Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Slightly cool, desaturated color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. Medium two-shot. Priya walks toward the wearer (Version A), smiling. He freezes, looks unsure, and says something hesitantly; her smile fades politely. 10 s.
+Photoreal character portrait, full body, front view, neutral studio light, plain light-grey background, fictional person, no logos on clothing or devices. a relaxed man in his early 30s (grey hoodie, lanyard badge).
 ```
 
-**5. S8-R: Unsure, right (With)** (536 chars) · reference: wearer Version B (earbud), plus the other characters in the shot
+**0e. Daniel** (296 chars)
 
 ```
-Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Medium two-shot. Daniel walks up and starts talking. The wearer (Version B) pauses as if listening to something, then gives a small side-to-side head shake to himself, and introduces himself to Daniel normally. 10 s.
+Photoreal character portrait, full body, front view, neutral studio light, plain light-grey background, fictional person, no logos on clothing or devices. a man in his early 30s (olive bomber jacket, lanyard badge), similar build and hair to a man in a grey hoodie but clearly a different person.
 ```
 
-**6. S8-L: Unsure, left (Without)** (473 chars) · reference: wearer Version A (no earbud), plus the other characters in the shot
+**1. S7-R: Re-meet, right (With)** (774 chars) · reference images: 0b, 0c
 
 ```
-Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Slightly cool, desaturated color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. Medium two-shot. Daniel walks up. The wearer (Version A) points at him confidently as if saying a name. Daniel frowns, shakes his head, and corrects him. Awkward pause. 10 s.
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. Cast: the man is in his late 20s (navy quarter-zip, dark jeans, short dark hair), with one white wireless earbud in his left ear; the woman is a friendly woman in her late 20s (navy blazer over a white top, conference badge). The man holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Medium two-shot. The woman walks back and waves. The man pauses for a beat as if listening, then keeps eye contact, smiles, and greets her warmly. The phone stays down at his side the whole time; he never looks at it. 10 s.
 ```
 
-**7. S4: Priya intro (full screen)** (448 chars) · reference: wearer Version B (earbud), plus the other characters in the shot
+**2. S7-L: Re-meet, left (Without)** (707 chars) · reference images: 0a, 0c
 
 ```
-Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Medium shot over the wearer's shoulder (Version B). Priya steps up, smiles, and shakes his hand as if introducing herself. 10 s.
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Slightly cool, desaturated color grade. Cast: the man is in his late 20s (navy quarter-zip, dark jeans, short dark hair), with no earbuds; the woman is a friendly woman in her late 20s (navy blazer over a white top, conference badge). The man holds a smartphone loosely in his right hand at his side, screen facing his leg. Medium two-shot. The woman walks back and waves. The man forces a smile, then lifts the phone in his hand and looks down at it, scrolling, mid-conversation. The woman notices and looks slightly put off. 10 s.
 ```
 
-**8. S5: Marcus intro (full screen)** (456 chars) · reference: wearer Version B (earbud), plus the other characters in the shot
+**3. S1-R: Hook, right (With)** (761 chars) · reference images: 0b, 0c
 
 ```
-Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Medium shot over the wearer's shoulder (Version B). Marcus greets him casually, talking with his hands as if describing a startup. 10 s.
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. Cast: the man is in his late 20s (navy quarter-zip, dark jeans, short dark hair), with one white wireless earbud in his left ear; the woman is a friendly woman in her late 20s (navy blazer over a white top, conference badge). The man holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Same framing. The woman walks toward the man, smiling. He lights up, greets her warmly, shifts the phone to his left hand at his side without looking at it, and shakes her hand with his right; she laughs. 10 s.
 ```
 
-**9. S3: Setup (full screen)** (579 chars) · reference: wearer Version B (earbud), plus the other characters in the shot
+**4. S1-L: Hook, left (Without)** (645 chars) · reference images: 0a, 0c
 
 ```
-Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Close-up, then medium. The wearer (Version B) puts one white earbud in his left ear, glances at the phone in his hand and taps it once, reads one sentence quietly from a small card, then lowers the phone to his side, screen toward his leg, and looks up. 10 s.
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Slightly cool, desaturated color grade. Cast: the man is in his late 20s (navy quarter-zip, dark jeans, short dark hair), with no earbuds; the woman is a friendly woman in her late 20s (navy blazer over a white top, conference badge). The man holds a smartphone loosely in his right hand at his side, screen facing his leg. Medium two-shot. The woman walks toward the man, smiling. He freezes, looks unsure, and says something hesitantly; her smile fades politely. 10 s.
 ```
 
-**10. S9: End (full screen)** (476 chars) · reference: wearer Version B (earbud), plus the other characters in the shot
+**5. S8-R: Unsure, right (With)** (793 chars) · reference images: 0b, 0e
 
 ```
-Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Medium shot. The wearer (Version B) walks out of the event hall at night, taps the phone in his hand once without looking at it, and smiles. Slow fade. 8 s.
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. Cast: the man is in his late 20s (navy quarter-zip, dark jeans, short dark hair), with one white wireless earbud in his left ear; the man in the bomber jacket is a man in his early 30s (olive bomber jacket, lanyard badge). The man holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Medium two-shot. The man in the bomber jacket walks up and starts talking. The man pauses as if listening to something, then gives a small side-to-side head shake to himself, and introduces himself to the man in the bomber jacket normally. 10 s.
+```
+
+**6. S8-L: Unsure, left (Without)** (699 chars) · reference images: 0a, 0e
+
+```
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Slightly cool, desaturated color grade. Cast: the man is in his late 20s (navy quarter-zip, dark jeans, short dark hair), with no earbuds; the man in the bomber jacket is a man in his early 30s (olive bomber jacket, lanyard badge). The man holds a smartphone loosely in his right hand at his side, screen facing his leg. Medium two-shot. The man in the bomber jacket walks up. The man points at him confidently as if saying a name. The man in the bomber jacket frowns, shakes his head, and corrects him. Awkward pause. 10 s.
+```
+
+**7. S4: Priya intro (full screen)** (671 chars) · reference images: 0b, 0c
+
+```
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. Cast: the man is in his late 20s (navy quarter-zip, dark jeans, short dark hair), with one white wireless earbud in his left ear; the woman is a friendly woman in her late 20s (navy blazer over a white top, conference badge). The man holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Medium shot over the wearer's shoulder. The woman steps up, smiles, and shakes his hand as if introducing herself. 10 s.
+```
+
+**8. S5: Marcus intro (full screen)** (680 chars) · reference images: 0b, 0d
+
+```
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. Cast: the man is in his late 20s (navy quarter-zip, dark jeans, short dark hair), with one white wireless earbud in his left ear; the man in the hoodie is a relaxed man in his early 30s (grey hoodie, lanyard badge). The man holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Medium shot over the wearer's shoulder. The man in the hoodie greets him casually, talking with his hands as if describing a startup. 10 s.
+```
+
+**9. S3: Setup (full screen)** (699 chars) · reference images: 0b
+
+```
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. Cast: the man is in his late 20s (navy quarter-zip, dark jeans, short dark hair), with one white wireless earbud in his left ear. The man holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Close-up, then medium. The man puts one white earbud in his left ear, glances at the phone in his hand and taps it once, reads one sentence quietly from a small card, then lowers the phone to his side, screen toward his leg, and looks up. 10 s.
+```
+
+**10. S9: End (full screen)** (596 chars) · reference images: 0b
+
+```
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. Cast: the man is in his late 20s (navy quarter-zip, dark jeans, short dark hair), with one white wireless earbud in his left ear. The man holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Medium shot. The man walks out of the event hall at night, taps the phone in his hand once without looking at it, and smiles. Slow fade. 8 s.
 ```
 
 ### 4.5 Voiceover and whisper (Clipchamp text-to-speech)

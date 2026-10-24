@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		EA0000000000000000000010 /* EarmarkShared in Frameworks */ = {isa = PBXBuildFile; productRef = EA0000000000000000000011 /* EarmarkShared */; };
+		EA0000000000000000000060 /* Engine in Frameworks */ = {isa = PBXBuildFile; productRef = EA0000000000000000000061 /* Engine */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -58,6 +59,7 @@
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				EA0000000000000000000010 /* EarmarkShared in Frameworks */,
+				EA0000000000000000000060 /* Engine in Frameworks */,
 			);
 		};
 		EA0000000000000000000031 /* Frameworks */ = {
@@ -105,6 +107,7 @@
 			name = Earmark;
 			packageProductDependencies = (
 				EA0000000000000000000011 /* EarmarkShared */,
+				EA0000000000000000000061 /* Engine */,
 			);
 			productName = Earmark;
 			productReference = CFA994D9308D58CC0049DF56 /* Earmark.app */;
@@ -161,6 +164,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				EA0000000000000000000012 /* XCLocalSwiftPackageReference "Shared" */,
+				EA0000000000000000000062 /* XCLocalSwiftPackageReference "Engine" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CFA994DA308D58CC0049DF56 /* Products */;
@@ -471,12 +475,21 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Shared;
 		};
+		EA0000000000000000000062 /* XCLocalSwiftPackageReference "Engine" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Engine;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		EA0000000000000000000011 /* EarmarkShared */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = EarmarkShared;
+		};
+		EA0000000000000000000061 /* Engine */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EA0000000000000000000062 /* XCLocalSwiftPackageReference "Engine" */;
+			productName = Engine;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

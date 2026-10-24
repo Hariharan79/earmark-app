@@ -1,17 +1,13 @@
-//
-//  EarmarkApp.swift
-//  Earmark
-//
-//  Created by Hariharan Natarajan on 10/24/26.
-//
-
 import SwiftUI
 
 @main
 struct EarmarkApp: App {
+    // Link Sandy's Engine package and pass its engine here once it compiles.
+    @State private var model = AppModel(engine: nil)
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            EventScreen(model: model)
         }
     }
 }

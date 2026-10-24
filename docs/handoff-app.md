@@ -32,6 +32,8 @@ xcodebuild -project ios/Earmark.xcodeproj -scheme Earmark \
 
 People are kept between events: the engine saves each person's voice signature, name, note and last-heard time (never audio) to `Application Support/Earmark/people.json` (`PeopleStore`), after every save or update and at End. The next event loads them, so someone met days ago gets "That's ___" when they talk. **Forget everyone** on the start screen deletes the file (`VoiceEngine.forgetEveryone()`, passed into `AppModel` because it isn't part of `EarmarkEngine`). Rerunning from Xcode keeps them; deleting the app removes them.
 
+**"Hey Siri, end Earmark"** (also "Stop Earmark", "End the event in Earmark") runs `Siri/EndEarmarkIntent.swift`, which calls the same `AppModel.endEvent` as the button. Siri itself says nothing; the AirPods whisper "Remembering N people". The phrases register when the app is installed and launched once. If Siri doesn't know them, open the Shortcuts app once, or check Settings → Siri → Earmark.
+
 **Test nod / shake** on the start screen runs one real prompt (same listener, 5 s timeout) and shows what it heard plus the peak speeds. Measured on Sandy's AirPods: nods 2.4–3.7 rad/s, shakes 4.8–6.1, cross-axis under 1.05; 5/5 nods and 5/5 shakes right, 2 of 3 ordinary movements ignored (one glance read as a shake, which is the harmless direction).
 
 Every whisper has a watchdog (`say`): if iOS never reports the speech finished, it gives up after `3 s + text length / 8` so one stuck whisper can't block the rest.

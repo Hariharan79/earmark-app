@@ -1,3 +1,4 @@
+import AppIntents
 import Engine
 import SwiftUI
 import os
@@ -15,7 +16,10 @@ struct EarmarkApp: App {
         config.wearerName = Self.wearerName
         let engine = VoiceEngine(config: config)
         self.engine = engine
-        _model = State(initialValue: AppModel(engine: engine, forget: { await engine.forgetEveryone() }))
+        let model = AppModel(engine: engine, forget: { await engine.forgetEveryone() })
+        _model = State(initialValue: model)
+        // "Hey Siri, end Earmark" (EndEarmarkIntent) ends this same event.
+        AppDependencyManager.shared.add(dependency: model)
     }
 
     var body: some Scene {

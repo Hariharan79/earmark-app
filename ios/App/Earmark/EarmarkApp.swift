@@ -15,7 +15,7 @@ struct EarmarkApp: App {
         config.wearerName = Self.wearerName
         let engine = VoiceEngine(config: config)
         self.engine = engine
-        _model = State(initialValue: AppModel(engine: engine))
+        _model = State(initialValue: AppModel(engine: engine, forget: { await engine.forgetEveryone() }))
     }
 
     var body: some Scene {

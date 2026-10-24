@@ -12,6 +12,8 @@ public actor VoiceEngine: EarmarkEngine {
     private let config: EngineConfig
     private let loadModels: @Sendable () async throws -> LoadedModels
     private let verifier: any Verifier
+    /// nil in tests, so they never touch the phone's saved people.
+    private let store: PeopleStore?
     private var modelsTask: Task<LoadedModels, any Error>?
     private let log = Logger(subsystem: "Earmark", category: "Engine")
 
@@ -36,18 +38,21 @@ public actor VoiceEngine: EarmarkEngine {
         self.init(
             config: config,
             loadModels: { try await LoadedModels.load(config.embedderKind) },
-            verifier: BackupRule(config: config)
+            verifier: BackupRule(config: config),
+            store: .standard
         )
     }
 
     init(
         config: EngineConfig,
         loadModels: @escaping @Sendable () async throws -> LoadedModels,
-        verifier: any Verifier
+        verifier: any Verifier,
+        store: PeopleStore? = nil
     ) {
         self.config = config
         self.loadModels = loadModels
         self.verifier = verifier
+        self.store = store
         book = PeopleBook(config: config, demoMode: false)
         segmenter = SpeechSegmenter(config: config)
         (events, eventSink) = AsyncStream.makeStream(of: EngineEvent.self)
@@ -82,7 +87,15 @@ public actor VoiceEngine: EarmarkEngine {
     public func startEvent(demoMode: Bool) async {
         await stopTranscriber()
         reset(demoMode: demoMode)
-        eventStart = Date()
+        let eventStart = Date()
+        self.eventStart = eventStart
+        do {
+            let remembered = try store?.load(eventStart: eventStart) ?? []
+            book.remember(remembered)
+            log.info("Remembering \(remembered.count) people from earlier events")
+        } catch {
+            log.error("Couldn't load saved people, starting with nobody: \(error)")
+        }
         let transcriber = Transcriber()
         self.transcriber = transcriber
         Task { [log] in
@@ -141,6 +154,7 @@ public actor VoiceEngine: EarmarkEngine {
         guard let eventStart else { return }
         if let event = book.answer(id, answer, at: frameTime, eventStart: eventStart) {
             eventSink.yield(event)
+            savePeople()
         }
         scheduleNaming()
     }
@@ -152,12 +166,43 @@ public actor VoiceEngine: EarmarkEngine {
             .map { $0.summary(eventStart: eventStart) }
     }
 
+    /// Ends the event. Everyone met is kept for next time (`PeopleStore`). Returns how many people are remembered.
     public func endEvent() async -> Int {
+        savePeople()
         let count = book.people.count
         await stopTranscriber()
         reset(demoMode: false)
         eventStart = nil
         return count
+    }
+
+    /// Deletes everyone remembered, on disk and in memory. Returns how many people were deleted.
+    /// Not part of `EarmarkEngine`; the app calls it on the concrete engine from the start screen.
+    public func forgetEveryone() async -> Int {
+        let count: Int
+        if eventStart != nil {
+            count = book.people.count
+        } else {
+            count = (try? store?.load(eventStart: Date()).count) ?? 0
+        }
+        do {
+            try store?.delete()
+        } catch {
+            log.error("Couldn't delete saved people: \(error)")
+        }
+        book.forgetEveryone()
+        log.info("Forgot \(count) people")
+        return count
+    }
+
+    /// Writes everyone to disk, so a crash or a rerun from Xcode doesn't lose them.
+    private func savePeople() {
+        guard let store, let eventStart else { return }
+        do {
+            try store.save(book.people, eventStart: eventStart)
+        } catch {
+            log.error("Couldn't save people: \(error)")
+        }
     }
 
     // MARK: - Pipeline
@@ -249,10 +294,12 @@ public actor VoiceEngine: EarmarkEngine {
             log.info("Chunk accepted, no change yet (pending, verifying, or someone already being heard)")
         case let .saved(person):
             eventSink.yield(.personSaved(person.summary(eventStart: eventStart)))
+            savePeople()
         case let .verify(context):
             let verdict = await verifier.verify(context)
             if let event = book.apply(verdict, context, at: time, eventStart: eventStart) {
                 eventSink.yield(event)
+                savePeople()
             }
         }
         scheduleNaming()
@@ -308,6 +355,7 @@ public actor VoiceEngine: EarmarkEngine {
         guard event == eventID, let eventStart, let updated = book.introduce(id, introduction) else { return }
         log.info("Filled in name/note for a person: name \(updated.name == nil ? "missing" : "found"), note \(updated.note.split(separator: " ").count) words")
         eventSink.yield(.personUpdated(updated.summary(eventStart: eventStart)))
+        savePeople()
     }
 
     /// The refine window was still open when their latest chunk started, so the chunk that

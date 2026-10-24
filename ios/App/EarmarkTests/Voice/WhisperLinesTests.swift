@@ -17,6 +17,18 @@ struct WhisperLinesTests {
         #expect(WhisperLines.deleted(count: count) == expected)
     }
 
+    @Test(
+        "End line says how many people are remembered",
+        arguments: [
+            (0, "Remembering 0 people."),
+            (1, "Remembering 1 person."),
+            (4, "Remembering 4 people."),
+        ]
+    )
+    func remembering(count: Int, expected: String) {
+        #expect(WhisperLines.remembering(count: count) == expected)
+    }
+
     @Test("Enrollment prompt matches PRD section 5")
     func enrollmentPrompt() {
         #expect(WhisperLines.enrollmentPrompt == "Read this sentence so I know your voice.")

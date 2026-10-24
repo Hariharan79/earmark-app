@@ -114,20 +114,26 @@ struct PeopleBook {
 
         let band = band(top.similarity)
         let person = top.person
-        unknown = []
 
-        // Still mid-conversation with them: learn from clear chunks, stay quiet.
+        // Still mid-conversation with them. Any match counts as hearing them, so they don't look
+        // "back" while still talking; only a clear one goes into their signature.
         if time - person.lastHeard < remeetGap {
-            if band == .high {
-                update(person.id) {
-                    $0.signature.add(embedding)
-                    $0.lastHeard = time
-                    $0.speech += [speech].compactMap { $0 }
-                }
-                lastSpoke = person.id
+            update(person.id) {
+                if band == .high { $0.signature.add(embedding) }
+                $0.lastHeard = time
+                $0.speech += [speech].compactMap { $0 }
             }
-            return .nothing
+            if band == .high {
+                lastSpoke = person.id
+                return .nothing
+            }
+            // An unsure chunk might instead be a new person who walked up during their gap
+            // (demo step 3), so it also counts toward saving a new voice. It doesn't trigger a
+            // name lookup for them, so a newcomer's words can't become their note.
+            return collectUnknown(embedding, at: time, speech: speech)
         }
+
+        unknown = []
 
         // Already asking about them.
         if prompts.values.contains(where: { $0.personID == person.id }) { return .nothing }
@@ -222,9 +228,24 @@ struct PeopleBook {
         unknown.append((embedding, time, speech))
         guard unknown.count >= config.newPersonChunks else { return .nothing }
 
-        let person = addPerson(unknown.map(\.embedding), unknown.compactMap(\.speech), at: time, firstHeard: unknown[0].time)
+        let embeddings = unknown.map(\.embedding)
+        let ranges = unknown.compactMap(\.speech)
+        let firstHeard = unknown[0].time
         unknown = []
-        return .saved(person)
+
+        // Averaged together, the chunks clearly match someone already saved: that's them sounding
+        // off for a moment (unsure chunks inside their gap), not a new person.
+        if let match = ranked(VoiceSignature(embeddings).vector).first, band(match.similarity) == .high {
+            merge(embeddings, ranges, into: match.person.id, at: time)
+            return .nothing
+        }
+
+        // A new person. While someone else's gap was open, these chunks also counted as hearing
+        // that person; take them back so the newcomer's words don't feed the other's name or note.
+        for index in people.indices {
+            people[index].speech.removeAll { ranges.contains($0) }
+        }
+        return .saved(addPerson(embeddings, ranges, at: time, firstHeard: firstHeard))
     }
 
     private mutating func addPerson(
@@ -247,6 +268,7 @@ struct PeopleBook {
         return person
     }
 
+    @discardableResult
     private mutating func merge(
         _ embeddings: [[Float]],
         _ speech: [ClosedRange<TimeInterval>],
@@ -256,8 +278,9 @@ struct PeopleBook {
         lastSpoke = id
         return update(id) { person in
             for embedding in embeddings { person.signature.add(embedding) }
-            person.lastHeard = time
-            person.speech += speech
+            person.lastHeard = max(person.lastHeard, time)
+            // Unsure chunks inside their gap may already be in their speech.
+            person.speech += speech.filter { !person.speech.contains($0) }
         }
     }
 

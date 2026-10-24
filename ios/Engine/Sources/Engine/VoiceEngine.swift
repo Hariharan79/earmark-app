@@ -27,6 +27,8 @@ public actor VoiceEngine: EarmarkEngine {
     private var transcriber: Transcriber?
     /// People with a name lookup already scheduled.
     private var naming: Set<UUID> = []
+    /// People who spoke again while their lookup was waiting, so they get one more.
+    private var namingAgain: Set<UUID> = []
     /// Changes every event, so late name lookups from an ended event are dropped.
     private var eventID = UUID()
 
@@ -169,6 +171,7 @@ public actor VoiceEngine: EarmarkEngine {
         lastLoudTime = 0
         lastWarningTime = -.infinity
         naming = []
+        namingAgain = []
         eventID = UUID()
     }
 
@@ -261,10 +264,19 @@ public actor VoiceEngine: EarmarkEngine {
     /// `noteRefineSpeech` seconds of speech this runs after every chunk, so the note gets richer as
     /// they say more. After that, only while the name or note is still missing.
     private func scheduleNaming() {
-        guard transcriber != nil, let id = book.lastSpoke, let person = book.person(id),
-              person.name == nil || person.note.isEmpty || isFirstMeeting(person),
-              naming.insert(id).inserted
+        if let id = book.lastSpoke { scheduleNaming(id) }
+    }
+
+    private func scheduleNaming(_ id: UUID) {
+        guard transcriber != nil, let person = book.person(id),
+              person.name == nil || person.note.isEmpty || isFirstMeeting(person)
         else { return }
+        guard naming.insert(id).inserted else {
+            // One is already waiting, and may run before this chunk's sentence is final.
+            // Run once more after it, so the last pass always comes `transcriptDelay` after their last chunk.
+            namingAgain.insert(id)
+            return
+        }
         let event = eventID
         let delay = config.transcriptDelay
         Task { [weak self] in
@@ -275,6 +287,9 @@ public actor VoiceEngine: EarmarkEngine {
 
     private func fillIntroduction(_ id: UUID, event: UUID) async {
         naming.remove(id)
+        defer {
+            if namingAgain.remove(id) != nil { scheduleNaming(id) }
+        }
         guard event == eventID, let transcriber, let person = book.person(id) else { return }
 
         // First meeting: everything they've said so far, so details from later sentences count.
@@ -295,8 +310,11 @@ public actor VoiceEngine: EarmarkEngine {
         eventSink.yield(.personUpdated(updated.summary(eventStart: eventStart)))
     }
 
+    /// The refine window was still open when their latest chunk started, so the chunk that
+    /// crosses `noteRefineSpeech` still gets read.
     private func isFirstMeeting(_ person: Person) -> Bool {
-        person.speechSeconds <= config.noteRefineSpeech
+        let latest = person.speech.last.map { $0.upperBound - $0.lowerBound } ?? 0
+        return person.speechSeconds - latest <= config.noteRefineSpeech
     }
 
     private func warnIfQuiet(_ frame: [Float], at time: TimeInterval) {

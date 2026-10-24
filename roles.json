@@ -3,7 +3,8 @@
     "hari": {
       "display": "Hari",
       "roles": [
-        "app"
+        "app",
+        "engine"
       ]
     },
     "sandy": {

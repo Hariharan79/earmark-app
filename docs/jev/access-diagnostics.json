@@ -1,0 +1,382 @@
+{
+  "tested_at_utc": "2026-10-24T21:19:09.685101+00:00",
+  "account_settings_changed": false,
+  "probes": [
+    {
+      "probe": "credit_balance",
+      "path": "/v1/credits",
+      "request_body": null,
+      "http_status": 200,
+      "request_id": "sfo1::cle1::4lpb5-1792876744386-d810594ddf6b",
+      "elapsed_ms": 1010.7,
+      "response": {
+        "balance": "5",
+        "total_used": "0"
+      }
+    },
+    {
+      "probe": "jev_default",
+      "path": "/v1/evaluate",
+      "request_body": {
+        "model": "typesafe-ai/jev",
+        "state": "The customer was charged twice for one order.",
+        "questions": {
+          "route": {
+            "type": "choice",
+            "instructions": "Choose a support team.",
+            "criteria": {
+              "billing": "Payments",
+              "shipping": "Deliveries"
+            }
+          }
+        }
+      },
+      "http_status": 403,
+      "request_id": "sfo1::cle1::jzmvx-1792876745313-8a773c3761cf",
+      "elapsed_ms": 944.1,
+      "response": {
+        "error": {
+          "message": "Free tier users do not have access to this model. Upgrade to paid credits at https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dtop-up for unrestricted access.",
+          "type": "no_providers_available",
+          "param": {
+            "error": "Free tier users do not have access to this model. Upgrade to paid credits at https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dtop-up for unrestricted access.",
+            "type": "no_providers_available",
+            "statusCode": 403,
+            "name": "RestrictedModelsError",
+            "message": "Free tier users do not have access to this model. Upgrade to paid credits at https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dtop-up for unrestricted access."
+          }
+        },
+        "providerMetadata": {
+          "gateway": {
+            "routing": {
+              "originalModelId": "typesafe-ai/jev",
+              "resolvedProvider": "typesafe-ai",
+              "fallbacksAvailable": [
+                "digitalocean"
+              ],
+              "canonicalSlug": "typesafe-ai/jev",
+              "modelAttemptCount": 1,
+              "modelAttempts": [
+                {
+                  "canonicalSlug": "typesafe-ai/jev",
+                  "success": false,
+                  "providerAttemptCount": 0,
+                  "providerAttempts": []
+                }
+              ],
+              "totalProviderAttemptCount": 0
+            },
+            "generationId": "gen_01M5QWG4M4425FRPNE9JXSQ336"
+          }
+        }
+      }
+    },
+    {
+      "probe": "jev_pinned_1_14",
+      "path": "/v1/evaluate",
+      "request_body": {
+        "model": "typesafe-ai/jev-1.14.0",
+        "state": "The customer was charged twice for one order.",
+        "questions": {
+          "route": {
+            "type": "choice",
+            "instructions": "Choose a support team.",
+            "criteria": {
+              "billing": "Payments",
+              "shipping": "Deliveries"
+            }
+          }
+        }
+      },
+      "http_status": 403,
+      "request_id": "sfo1::cle1::rkxfl-1792876746039-45092b96a31b",
+      "elapsed_ms": 530.7,
+      "response": {
+        "error": {
+          "message": "Free tier users do not have access to this model. Upgrade to paid credits at https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dtop-up for unrestricted access.",
+          "type": "no_providers_available",
+          "param": {
+            "error": "Free tier users do not have access to this model. Upgrade to paid credits at https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dtop-up for unrestricted access.",
+            "type": "no_providers_available",
+            "statusCode": 403,
+            "name": "RestrictedModelsError",
+            "message": "Free tier users do not have access to this model. Upgrade to paid credits at https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dtop-up for unrestricted access."
+          }
+        },
+        "providerMetadata": {
+          "gateway": {
+            "routing": {
+              "originalModelId": "typesafe-ai/jev-1.14.0",
+              "resolvedProvider": "typesafe-ai",
+              "fallbacksAvailable": [],
+              "canonicalSlug": "typesafe-ai/jev-1.14.0",
+              "modelAttemptCount": 1,
+              "modelAttempts": [
+                {
+                  "canonicalSlug": "typesafe-ai/jev-1.14.0",
+                  "success": false,
+                  "providerAttemptCount": 0,
+                  "providerAttempts": []
+                }
+              ],
+              "totalProviderAttemptCount": 0
+            },
+            "generationId": "gen_01M5QWG5AZKGC4FRR5Y263D97F"
+          }
+        }
+      }
+    },
+    {
+      "probe": "jev_digitalocean",
+      "path": "/v1/evaluate",
+      "request_body": {
+        "model": "typesafe-ai/jev",
+        "state": "The customer was charged twice for one order.",
+        "questions": {
+          "route": {
+            "type": "choice",
+            "instructions": "Choose a support team.",
+            "criteria": {
+              "billing": "Payments",
+              "shipping": "Deliveries"
+            }
+          }
+        },
+        "providerOptions": {
+          "gateway": {
+            "only": [
+              "digitalocean"
+            ]
+          }
+        }
+      },
+      "http_status": 403,
+      "request_id": "sfo1::cle1::5rrn4-1792876747052-3d552cf69d0d",
+      "elapsed_ms": 1144.2,
+      "response": {
+        "error": {
+          "message": "Free tier users do not have access to this model. Upgrade to paid credits at https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dtop-up for unrestricted access.",
+          "type": "no_providers_available",
+          "param": {
+            "error": "Free tier users do not have access to this model. Upgrade to paid credits at https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dtop-up for unrestricted access.",
+            "type": "no_providers_available",
+            "statusCode": 403,
+            "name": "RestrictedModelsError",
+            "message": "Free tier users do not have access to this model. Upgrade to paid credits at https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dtop-up for unrestricted access."
+          }
+        },
+        "providerMetadata": {
+          "gateway": {
+            "routing": {
+              "originalModelId": "typesafe-ai/jev",
+              "resolvedProvider": "digitalocean",
+              "fallbacksAvailable": [],
+              "canonicalSlug": "typesafe-ai/jev",
+              "modelAttemptCount": 1,
+              "modelAttempts": [
+                {
+                  "canonicalSlug": "typesafe-ai/jev",
+                  "success": false,
+                  "providerAttemptCount": 0,
+                  "providerAttempts": []
+                }
+              ],
+              "totalProviderAttemptCount": 0
+            },
+            "generationId": "gen_01M5QWG6C1Q7NGC7Z518Q8M71D"
+          }
+        }
+      }
+    },
+    {
+      "probe": "jev_typesafe_compatible",
+      "path": "/typesafe/v1/systemone",
+      "request_body": {
+        "model": "typesafe-ai/jev",
+        "state": "The customer was charged twice for one order.",
+        "questions": {
+          "route": {
+            "type": "choice",
+            "instructions": "Choose a support team.",
+            "criteria": {
+              "billing": "Payments",
+              "shipping": "Deliveries"
+            }
+          }
+        }
+      },
+      "http_status": 403,
+      "request_id": "sfo1::cle1::qswkq-1792876747875-d2d56ae601c7",
+      "elapsed_ms": 609.6,
+      "response": {
+        "error": {
+          "message": "Free tier users do not have access to this model. Upgrade to paid credits at https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dtop-up for unrestricted access.",
+          "type": "no_providers_available",
+          "param": {
+            "error": "Free tier users do not have access to this model. Upgrade to paid credits at https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dtop-up for unrestricted access.",
+            "type": "no_providers_available",
+            "statusCode": 403,
+            "name": "RestrictedModelsError",
+            "message": "Free tier users do not have access to this model. Upgrade to paid credits at https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dtop-up for unrestricted access."
+          }
+        },
+        "providerMetadata": {
+          "gateway": {
+            "routing": {
+              "originalModelId": "typesafe-ai/jev",
+              "resolvedProvider": "typesafe-ai",
+              "fallbacksAvailable": [
+                "digitalocean"
+              ],
+              "canonicalSlug": "typesafe-ai/jev",
+              "modelAttemptCount": 1,
+              "modelAttempts": [
+                {
+                  "canonicalSlug": "typesafe-ai/jev",
+                  "success": false,
+                  "providerAttemptCount": 0,
+                  "providerAttempts": []
+                }
+              ],
+              "totalProviderAttemptCount": 0
+            },
+            "generationId": "gen_01M5QWG73YHWB5SB1QBVHN0FQ3"
+          }
+        }
+      }
+    },
+    {
+      "probe": "free_credit_control",
+      "path": "/v1/chat/completions",
+      "request_body": {
+        "model": "google/gemini-2.5-flash-lite",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Reply OK."
+          }
+        ],
+        "max_tokens": 4
+      },
+      "http_status": 200,
+      "request_id": "sfo1::cle1::4tt9k-1792876748645-e17436af6abb",
+      "elapsed_ms": 1581.1,
+      "response": {
+        "id": "gen_01M5QWG7W7VFDN2TSVH0YW2P8W",
+        "object": "chat.completion",
+        "created": 1792876749,
+        "model": "google/gemini-2.5-flash-lite",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "OK.",
+              "provider_metadata": {
+                "vertex": {
+                  "promptFeedback": null,
+                  "groundingMetadata": null,
+                  "urlContextMetadata": null,
+                  "safetyRatings": null,
+                  "usageMetadata": {
+                    "promptTokenCount": 3,
+                    "candidatesTokenCount": 2,
+                    "totalTokenCount": 5,
+                    "trafficType": "ON_DEMAND",
+                    "promptTokensDetails": [
+                      {
+                        "modality": "TEXT",
+                        "tokenCount": 3
+                      }
+                    ],
+                    "candidatesTokensDetails": [
+                      {
+                        "modality": "TEXT",
+                        "tokenCount": 2
+                      }
+                    ]
+                  },
+                  "finishMessage": null,
+                  "serviceTier": null
+                },
+                "gateway": {
+                  "routing": {
+                    "originalModelId": "google/gemini-2.5-flash-lite",
+                    "resolvedProvider": "vertex",
+                    "fallbacksAvailable": [
+                      "google"
+                    ],
+                    "planningReasoning": "System credentials planned for: vertex, google. Total execution order: vertex(system) \u2192 google(system)",
+                    "canonicalSlug": "google/gemini-2.5-flash-lite",
+                    "finalProvider": "vertex",
+                    "modelAttemptCount": 1,
+                    "modelAttempts": [
+                      {
+                        "canonicalSlug": "google/gemini-2.5-flash-lite",
+                        "success": true,
+                        "providerAttemptCount": 1,
+                        "providerAttempts": [
+                          {
+                            "provider": "vertex",
+                            "credentialType": "system",
+                            "success": true,
+                            "startTime": 1792876748717,
+                            "endTime": 1792876749444,
+                            "statusCode": 200,
+                            "providerResponseId": "zCDdasOoOc2vw8cP_5fAmAI"
+                          }
+                        ]
+                      }
+                    ],
+                    "totalProviderAttemptCount": 1,
+                    "affinity": {
+                      "outcome": "skipped_below_min_prefix"
+                    },
+                    "clientSessionId": "063a8c9104476a5e9eab5bbf614fca10",
+                    "clientSessionIdSource": "fingerprint"
+                  },
+                  "cost": "0.0000011",
+                  "marketCost": "0.0000011",
+                  "surchargeCost": "0",
+                  "gatewayCost": "0.0000011",
+                  "inferenceCost": "0.0000011",
+                  "inputInferenceCost": "0.0000003",
+                  "outputInferenceCost": "0.0000008",
+                  "generationId": "gen_01M5QWG7W7VFDN2TSVH0YW2P8W"
+                }
+              }
+            },
+            "logprobs": null,
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 3,
+          "completion_tokens": 2,
+          "total_tokens": 5,
+          "cost": 1.1e-06,
+          "is_byok": false,
+          "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "audio_tokens": 0,
+            "video_tokens": 0
+          },
+          "cost_details": {
+            "upstream_inference_cost": null,
+            "upstream_inference_prompt_cost": 0,
+            "upstream_inference_completions_cost": 0
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 0,
+            "image_tokens": 0
+          },
+          "cache_creation_input_tokens": 0,
+          "market_cost": 1.1e-06,
+          "gateway_cost": 1.1e-06
+        },
+        "system_fingerprint": "fp_73oizkezht",
+        "generationId": "gen_01M5QWG7W7VFDN2TSVH0YW2P8W"
+      }
+    }
+  ]
+}

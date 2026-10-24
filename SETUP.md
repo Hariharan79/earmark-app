@@ -45,8 +45,9 @@ No Python, no Docker, no database server. The app runs entirely on the iPhone.
 2. Open **Git Bash**, clone, and run `./setup.sh jiwon`. This script hasn't been tested on Windows yet, so tell Hari if it errors. You can still work in `presentation/` and `docs/` without it.
 3. **Get Jev working before the event** (this is the most useful prep you can do):
    - Create a Vercel account, open **AI Gateway**, and create an **API key**. Add a payment method or credits if the gateway asks for it.
-   - Make one test "choice" call with a REST client (Postman, Insomnia, or `curl`) to `POST https://ai-gateway.vercel.sh/v1/evaluate` with model `typesafe-ai/jev`. Use 3 options, for example `whisper_known`, `new_person`, `ask_wearer`. Check Vercel's AI Gateway docs for the exact body, since we haven't confirmed it yet.
-   - Write the exact working URL, headers, request body, and response into `docs/jev.md`. Never put the key itself in the doc. Sandy copies it into the Swift code during the hackathon.
+   - The Jev "choice" call has been verified: `POST https://ai-gateway.vercel.sh/v1/evaluate`, model `typesafe-ai/jev`, with options `whisper_known`, `new_person`, and `ask_wearer`. See [docs/jev.md](docs/jev.md) for the exact headers, request fixtures, observed responses, and optional Python test helper.
+   - On 2026-10-24, card verification alone still returned a free-tier model restriction; requests succeeded after purchasing Gateway credits. Preserve the on-device fallback. The known-person result was below the 0.85 whisper probability gate, and two of three laptop round trips exceeded the 600 ms budget.
+   - Keep the API key out of documentation and Git. Sandy uses the verified request/response contract for the Swift integration.
    - Send the key to Sandy privately (not in git, not in the group chat). Sandy puts it in `ios/Secrets.xcconfig` as `AI_GATEWAY_API_KEY`.
 4. Pick your deck tool and set up an empty deck.
 

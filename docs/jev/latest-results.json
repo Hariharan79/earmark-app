@@ -1,0 +1,232 @@
+{
+  "tested_at_utc": "2026-10-24T21:24:55.109642+00:00",
+  "endpoint": "https://ai-gateway.vercel.sh/v1/evaluate",
+  "data": "Synthetic text and similarity scores only; no real audio.",
+  "results": [
+    {
+      "case": "known",
+      "expected_choice": "whisper_known",
+      "http_status": 200,
+      "elapsed_ms": 883.3,
+      "response": {
+        "answers": {
+          "action": {
+            "type": "choice",
+            "choice": "whisper_known",
+            "probabilities": {
+              "whisper_known": 0.74,
+              "new_person": 0,
+              "ask_wearer": 0.26
+            },
+            "confidence": 0.61
+          }
+        },
+        "model": "typesafe-ai/jev",
+        "providerMetadata": {
+          "typesafe": {
+            "confidence": {
+              "action": 0.61
+            }
+          },
+          "gateway": {
+            "routing": {
+              "originalModelId": "typesafe-ai/jev",
+              "resolvedProvider": "typesafe-ai",
+              "fallbacksAvailable": [
+                "digitalocean"
+              ],
+              "planningReasoning": "System credentials planned for: typesafe-ai, digitalocean. Total execution order: typesafe-ai(system) \u2192 digitalocean(system)",
+              "canonicalSlug": "typesafe-ai/jev",
+              "finalProvider": "typesafe-ai",
+              "modelAttemptCount": 1,
+              "modelAttempts": [
+                {
+                  "canonicalSlug": "typesafe-ai/jev",
+                  "success": true,
+                  "providerAttemptCount": 1,
+                  "providerAttempts": [
+                    {
+                      "provider": "typesafe-ai",
+                      "credentialType": "system",
+                      "success": true,
+                      "startTime": 1792877093592,
+                      "endTime": 1792877093638,
+                      "statusCode": 200
+                    }
+                  ]
+                }
+              ],
+              "totalProviderAttemptCount": 1
+            },
+            "cost": "0.000026838",
+            "marketCost": "0.000026838",
+            "surchargeCost": "0",
+            "gatewayCost": "0.000026838",
+            "inferenceCost": "0.000026838",
+            "inputInferenceCost": "0.000026838",
+            "outputInferenceCost": "0",
+            "generationId": "gen_01M5QWTRGKPV0S46C8M609NJ3P"
+          }
+        },
+        "usage": {
+          "inputTokens": 639,
+          "outputTokens": 48
+        }
+      },
+      "choice": "whisper_known",
+      "expected_choice_match": true,
+      "within_600ms_budget": false,
+      "whisper_probability_pass": false
+    },
+    {
+      "case": "new",
+      "expected_choice": "new_person",
+      "http_status": 200,
+      "elapsed_ms": 792.6,
+      "response": {
+        "answers": {
+          "action": {
+            "type": "choice",
+            "choice": "new_person",
+            "probabilities": {
+              "whisper_known": 0,
+              "new_person": 0.8,
+              "ask_wearer": 0.2
+            },
+            "confidence": 0.7
+          }
+        },
+        "model": "typesafe-ai/jev",
+        "providerMetadata": {
+          "typesafe": {
+            "confidence": {
+              "action": 0.7
+            }
+          },
+          "gateway": {
+            "routing": {
+              "originalModelId": "typesafe-ai/jev",
+              "resolvedProvider": "typesafe-ai",
+              "fallbacksAvailable": [
+                "digitalocean"
+              ],
+              "planningReasoning": "System credentials planned for: typesafe-ai, digitalocean. Total execution order: typesafe-ai(system) \u2192 digitalocean(system)",
+              "canonicalSlug": "typesafe-ai/jev",
+              "finalProvider": "typesafe-ai",
+              "modelAttemptCount": 1,
+              "modelAttempts": [
+                {
+                  "canonicalSlug": "typesafe-ai/jev",
+                  "success": true,
+                  "providerAttemptCount": 1,
+                  "providerAttempts": [
+                    {
+                      "provider": "typesafe-ai",
+                      "credentialType": "system",
+                      "success": true,
+                      "startTime": 1792877094173,
+                      "endTime": 1792877094292,
+                      "statusCode": 200
+                    }
+                  ]
+                }
+              ],
+              "totalProviderAttemptCount": 1
+            },
+            "cost": "0.000026754",
+            "marketCost": "0.000026754",
+            "surchargeCost": "0",
+            "gatewayCost": "0.000026754",
+            "inferenceCost": "0.000026754",
+            "inputInferenceCost": "0.000026754",
+            "outputInferenceCost": "0",
+            "generationId": "gen_01M5QWTS85408RQEV80MZWFCXE"
+          }
+        },
+        "usage": {
+          "inputTokens": 637,
+          "outputTokens": 46
+        }
+      },
+      "choice": "new_person",
+      "expected_choice_match": true,
+      "within_600ms_budget": false,
+      "whisper_probability_pass": false
+    },
+    {
+      "case": "ambiguous",
+      "expected_choice": "ask_wearer",
+      "http_status": 200,
+      "elapsed_ms": 592.7,
+      "response": {
+        "answers": {
+          "action": {
+            "type": "choice",
+            "choice": "ask_wearer",
+            "probabilities": {
+              "whisper_known": 0.01,
+              "new_person": 0,
+              "ask_wearer": 0.99
+            },
+            "confidence": 0.98
+          }
+        },
+        "model": "typesafe-ai/jev",
+        "providerMetadata": {
+          "typesafe": {
+            "confidence": {
+              "action": 0.98
+            }
+          },
+          "gateway": {
+            "routing": {
+              "originalModelId": "typesafe-ai/jev",
+              "resolvedProvider": "typesafe-ai",
+              "fallbacksAvailable": [
+                "digitalocean"
+              ],
+              "planningReasoning": "System credentials planned for: typesafe-ai, digitalocean. Total execution order: typesafe-ai(system) \u2192 digitalocean(system)",
+              "canonicalSlug": "typesafe-ai/jev",
+              "finalProvider": "typesafe-ai",
+              "modelAttemptCount": 1,
+              "modelAttempts": [
+                {
+                  "canonicalSlug": "typesafe-ai/jev",
+                  "success": true,
+                  "providerAttemptCount": 1,
+                  "providerAttempts": [
+                    {
+                      "provider": "typesafe-ai",
+                      "credentialType": "system",
+                      "success": true,
+                      "startTime": 1792877094957,
+                      "endTime": 1792877095021,
+                      "statusCode": 200
+                    }
+                  ]
+                }
+              ],
+              "totalProviderAttemptCount": 1
+            },
+            "cost": "0.000026586",
+            "marketCost": "0.000026586",
+            "surchargeCost": "0",
+            "gatewayCost": "0.000026586",
+            "inferenceCost": "0.000026586",
+            "inputInferenceCost": "0.000026586",
+            "outputInferenceCost": "0",
+            "generationId": "gen_01M5QWTT0FGTN5PHCG3WYZ5Y7M"
+          }
+        },
+        "usage": {
+          "inputTokens": 633,
+          "outputTokens": 48
+        }
+      },
+      "choice": "ask_wearer",
+      "expected_choice_match": true,
+      "within_600ms_budget": true,
+      "whisper_probability_pass": false
+    }
+  ]
+}

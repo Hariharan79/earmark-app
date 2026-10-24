@@ -1,6 +1,11 @@
 # secrets
 ios/Secrets.xcconfig
 .env
+/jev.txt
+
+# Local Windows tools and Python helper caches
+/presentation/.tools/
+__pycache__/
 
 # per-person guardrail state (written by setup.sh)
 .earmark-role

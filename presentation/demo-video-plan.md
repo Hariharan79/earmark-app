@@ -156,7 +156,85 @@ S9    Medium shot. The wearer (Version B) walks out of the event hall at night, 
 
 If Kling generates audio, mute it in Clipchamp and use the voiceover and whisper tracks below, so the voices stay consistent.
 
-### 4.4 Voiceover and whisper (Clipchamp text-to-speech)
+### 4.4 Ready-to-paste prompts (one per clip, in generation order)
+
+Copy one block into Kling per clip. Each block already includes the shared scene line, color grade, and phone pose. All are under Kling's 2,500-character limit.
+
+**Step 0: Character sheet** (755 chars). Generate first; save the images to use as references.
+
+```
+Character reference sheet, photoreal, neutral studio light, front and 3/4 views, plain background:
+1) "The wearer": a man in his late 20s, startup-founder casual (navy quarter-zip, dark jeans),
+   short dark hair, holding a smartphone loosely in his right hand, arm relaxed at his side,
+   screen facing his leg. Version A: no earbuds. Version B: one white wireless earbud in his left ear.
+2) "Priya": a woman in her late 20s, friendly, navy blazer over a white top, a conference badge.
+3) "Marcus": a man in his early 30s, grey hoodie, lanyard badge, relaxed.
+4) "Daniel": a man in his early 30s, similar build and hair to Marcus but clearly a different
+   person, olive bomber jacket, lanyard badge.
+Fictional people. No logos on any clothing or device.
+```
+
+**1. S7-R: Re-meet, right (With)** (576 chars) · reference: wearer Version B (earbud), plus the other characters in the shot
+
+```
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Medium two-shot, same framing as S7-L. Priya walks back and waves. The wearer (Version B) pauses for a beat as if listening, then keeps eye contact, smiles, and greets her warmly. The phone stays down at his side the whole time; he never looks at it. 10 s.
+```
+
+**2. S7-L: Re-meet, left (Without)** (514 chars) · reference: wearer Version A (no earbud), plus the other characters in the shot
+
+```
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Slightly cool, desaturated color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. Medium two-shot. Priya walks back and waves. The wearer (Version A) forces a smile, then lifts the phone in his hand and looks down at it, scrolling, mid-conversation. Priya notices and looks slightly put off. 10 s.
+```
+
+**3. S1-R: Hook, right (With)** (541 chars) · reference: wearer Version B (earbud), plus the other characters in the shot
+
+```
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Same framing. Priya walks toward the wearer (Version B), smiling. He lights up, greets her warmly, shifts the phone to his left hand at his side without looking at it, and shakes her hand with his right; she laughs. 10 s.
+```
+
+**4. S1-L: Hook, left (Without)** (456 chars) · reference: wearer Version A (no earbud), plus the other characters in the shot
+
+```
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Slightly cool, desaturated color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. Medium two-shot. Priya walks toward the wearer (Version A), smiling. He freezes, looks unsure, and says something hesitantly; her smile fades politely. 10 s.
+```
+
+**5. S8-R: Unsure, right (With)** (536 chars) · reference: wearer Version B (earbud), plus the other characters in the shot
+
+```
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Medium two-shot. Daniel walks up and starts talking. The wearer (Version B) pauses as if listening to something, then gives a small side-to-side head shake to himself, and introduces himself to Daniel normally. 10 s.
+```
+
+**6. S8-L: Unsure, left (Without)** (473 chars) · reference: wearer Version A (no earbud), plus the other characters in the shot
+
+```
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Slightly cool, desaturated color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. Medium two-shot. Daniel walks up. The wearer (Version A) points at him confidently as if saying a name. Daniel frowns, shakes his head, and corrects him. Awkward pause. 10 s.
+```
+
+**7. S4: Priya intro (full screen)** (448 chars) · reference: wearer Version B (earbud), plus the other characters in the shot
+
+```
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Medium shot over the wearer's shoulder (Version B). Priya steps up, smiles, and shakes his hand as if introducing herself. 10 s.
+```
+
+**8. S5: Marcus intro (full screen)** (456 chars) · reference: wearer Version B (earbud), plus the other characters in the shot
+
+```
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Medium shot over the wearer's shoulder (Version B). Marcus greets him casually, talking with his hands as if describing a startup. 10 s.
+```
+
+**9. S3: Setup (full screen)** (579 chars) · reference: wearer Version B (earbud), plus the other characters in the shot
+
+```
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Close-up, then medium. The wearer (Version B) puts one white earbud in his left ear, glances at the phone in his hand and taps it once, reads one sentence quietly from a small card, then lowers the phone to his side, screen toward his leg, and looks up. 10 s.
+```
+
+**10. S9: End (full screen)** (476 chars) · reference: wearer Version B (earbud), plus the other characters in the shot
+
+```
+Photoreal, evening startup networking mixer in a modern university hall, warm string lights, people holding drinks, shallow depth of field, handheld, 16:9, no text, no logos. Warm, natural color grade. He holds a smartphone loosely in his right hand at his side, screen facing his leg. He never looks down at the phone. Medium shot. The wearer (Version B) walks out of the event hall at night, taps the phone in his hand once without looking at it, and smiles. Slow fade. 8 s.
+```
+
+### 4.5 Voiceover and whisper (Clipchamp text-to-speech)
 
 - **Narrator:** warm, calm, confident, American English, normal speed.
 - **Whisper:** a different, softer voice; American English; slightly faster. In Clipchamp, pan it fully **left** if panning is available, lower the room audio under it, and always show the 🎧 caption (viewers can't hear an earbud).

@@ -22,7 +22,7 @@
 | # | Item | PRD | Must show |
 |---|---|---|---|
 | D1 | The problem | §1 | Someone walks back up and the name is gone. Founder stakes: investor, hire, customer |
-| D2 | The setup | §6.1 | Phone on a lanyard at chest height, mic facing out. Earbuds in. Nothing in hand |
+| D2 | The setup | §6.1 | Just holding our phone, mic facing out. Earbuds in. Nothing in hand |
 | D3 | Start once | §5 | One tap, then reads one sentence so it learns the wearer's voice. Chime |
 | D4 | Meet new people, silently | §5, §6.3 | Priya and Marcus introduce themselves. **Nothing** happens in the wearer's ear. They're saved quietly |
 | D5 | The re-meet whisper | §5 | Priya returns. Within ~3 s the wearer hears **"That's Priya, robotics at Stanford."** Wearer greets her by name |

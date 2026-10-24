@@ -58,7 +58,13 @@ struct NameExtractor: Sendable {
         let transcript = IntroductionRule.normalized(transcript).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !transcript.isEmpty else { return .empty }
 
-        let rule = IntroductionRule.extract(from: transcript)
+        let names = IntroductionRule.names(in: transcript, ignoring: ignoredNames)
+        // Two people introducing themselves in one stretch of text (the transcript ran two speakers
+        // together): we can't tell whose is whose, so no name at all, whatever the model says.
+        if names.count > 1 {
+            log.info("Two different names in one person's text, leaving the name empty")
+        }
+        let rule = Introduction(name: names.count == 1 ? names[0] : nil, note: IntroductionRule.note(in: transcript) ?? "")
         guard useModel, Self.modelAvailable else {
             if useModel { log.info("Foundation Models \(Self.modelStatus), using the rule") }
             return checked(rule, transcript: transcript)
@@ -68,7 +74,7 @@ struct NameExtractor: Sendable {
             let model = try await ask(transcript)
             // The rule's patterns are strict, so when it found a name, trust it over the model.
             let combined = Introduction(
-                name: rule.name ?? model.name,
+                name: names.isEmpty ? model.name : rule.name,
                 note: model.note.isEmpty ? rule.note : model.note
             )
             return checked(combined, transcript: transcript)
@@ -139,9 +145,10 @@ struct NameExtractor: Sendable {
 
 /// The no-model backup: a few strict "I'm ___" patterns. Misses plenty, but rarely gets a name wrong.
 enum IntroductionRule {
-    static func extract(from transcript: String) -> Introduction {
+    static func extract(from transcript: String, ignoring ignored: Set<String> = []) -> Introduction {
         let transcript = normalized(transcript)
-        return Introduction(name: name(in: transcript), note: note(in: transcript) ?? "")
+        let names = names(in: transcript, ignoring: ignored)
+        return Introduction(name: names.count == 1 ? names[0] : nil, note: note(in: transcript) ?? "")
     }
 
     /// The transcriber writes curly apostrophes ("I’m"); the patterns expect straight ones.
@@ -156,16 +163,19 @@ enum IntroductionRule {
     nonisolated(unsafe) private static let clearPattern = #/(?i)\b(?:my name is|my name's|name's|call me|i go by)\s+([a-z][a-z'\-]+)/#
     nonisolated(unsafe) private static let casualPattern = #/(?i:\b(?:i'm|i am|im)\s+)([A-Z][A-Za-z'\-]+)/#
 
-    static func name(in transcript: String) -> String? {
-        let clear = transcript.firstMatch(of: clearPattern)
-            .map { (String($0.output.1), $0.range.lowerBound) }
-        let casual = transcript.matches(of: casualPattern)
-            .map { (String($0.output.1), $0.range.lowerBound) }
-            .first { !notNames.contains($0.0.lowercased()) }
-        let candidates = [clear, casual].compactMap { $0 }
-            .filter { !notNames.contains($0.0.lowercased()) }
-        guard let first = candidates.min(by: { $0.1 < $1.1 }) else { return nil }
-        return first.0.prefix(1).uppercased() + first.0.dropFirst()
+    /// Every distinct name someone gave for themselves, in the order said. `ignored` (lowercased) is
+    /// skipped, not treated as a match, so "Hi, I'm Sandy… I'm Priya" still finds Priya.
+    static func names(in transcript: String, ignoring ignored: Set<String> = []) -> [String] {
+        let clear = transcript.matches(of: clearPattern).map { ($0.output.1, $0.range.lowerBound) }
+        let casual = transcript.matches(of: casualPattern).map { ($0.output.1, $0.range.lowerBound) }
+        var names: [String] = []
+        for (raw, _) in (clear + casual).sorted(by: { $0.1 < $1.1 }) {
+            let lower = raw.lowercased()
+            guard !notNames.contains(lower), !ignored.contains(lower) else { continue }
+            let name = raw.prefix(1).uppercased() + raw.dropFirst()
+            if !names.contains(name) { names.append(name) }
+        }
+        return names
     }
 
     /// Words that follow "I'm" or "my name is" but aren't names, even when capitalized at a sentence start.

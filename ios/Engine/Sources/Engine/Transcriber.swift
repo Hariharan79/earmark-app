@@ -15,6 +15,13 @@ actor Transcriber {
         let start: TimeInterval
         let end: TimeInterval
         let text: String
+
+        /// Mostly inside `start...end`, or `start...end` mostly inside it. Just touching the edge doesn't count.
+        func belongs(from start: TimeInterval, to end: TimeInterval) -> Bool {
+            let overlap = min(self.end, end) - max(self.start, start)
+            guard overlap > 0 else { return false }
+            return overlap >= 0.5 * (self.end - self.start) || overlap >= 0.5 * (end - start)
+        }
     }
 
     enum Failure: Error {
@@ -133,12 +140,16 @@ actor Transcriber {
         audioSink.yield(chunk)
     }
 
-    /// Everything said between `start` and `end` (event time), final text plus the latest
+    /// What was said between `start` and `end` (event time), final text plus the latest
     /// not-yet-final guess. Final text lags speech by a second or two, so asking again a little
     /// later gives a better answer.
-    func text(from start: TimeInterval, to end: TimeInterval, slack: TimeInterval = 0.3) -> String {
+    ///
+    /// A sentence counts only if it mostly falls inside the range, or the range mostly falls inside it.
+    /// One that just touches the edge is usually the previous speaker's, and taking it could give
+    /// this person someone else's name.
+    func text(from start: TimeInterval, to end: TimeInterval) -> String {
         (segments + [volatile].compactMap { $0 })
-            .filter { $0.end >= start - slack && $0.start <= end + slack && !$0.text.isEmpty }
+            .filter { !$0.text.isEmpty && $0.belongs(from: start, to: end) }
             .map(\.text)
             .joined(separator: " ")
     }

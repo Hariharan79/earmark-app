@@ -28,7 +28,7 @@
 
 **Earmark whispers the name of someone you've already met, the moment you hear their voice again.**
 
-- Phone on a lanyard. AirPods in. That's it.
+- Phone in your hand, down at your side. AirPods in. That's it.
 - No screen. No taps during the event. No typing names.
 - New people are saved automatically. Returning people get a whisper: *"That's Priya, robotics at Stanford."*
 
@@ -93,7 +93,7 @@ Team: Hari (app) · Sandy (engine) · Jiwon (pitch + testing)
 
 ### A1. How it works
 
-iPhone mic (lanyard, facing out) → speech detection + quality checks → voice signature → same person or new? → whisper through AirPods
+iPhone mic (handheld, at your side) → speech detection + quality checks → voice signature → same person or new? → whisper through AirPods
 
 | Job | Tool (all on-device except Jev) |
 |---|---|
@@ -106,7 +106,7 @@ iPhone mic (lanyard, facing out) → speech detection + quality checks → voice
 
 ### A2. Why the iPhone mic, not the AirPods mic
 
-AirPods mics are tuned to the wearer's own voice, so they pick up the other person poorly. The iPhone on a lanyard listens; the AirPods only whisper.
+AirPods mics are tuned to the wearer's own voice, so they pick up the other person poorly. The iPhone in your hand listens; the AirPods only whisper.
 
 ### A3. Why no noise filter before the voice signature
 

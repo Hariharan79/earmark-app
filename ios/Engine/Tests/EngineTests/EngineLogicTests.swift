@@ -58,6 +58,28 @@ private func voice(_ axis: Int, toward other: Int? = nil, by amount: Float = 0, 
         let snr = try! #require(chunks.first?.snr)
         #expect(abs(snr - 40) < 0.1)  // 0.1 is -20 dBFS
     }
+
+    /// Fluent speech leaves mostly word edges in the non-speech frames. A quiet room must still pass.
+    @Test func wordEdgesDoNotRaiseNoiseFloor() {
+        var segmenter = SpeechSegmenter(config: EngineConfig())
+        let quietNoise = [Float](repeating: 0.001, count: SpeechSegmenter.frameSize)  // -60 dBFS
+        let wordEdge = [Float](repeating: 0.05, count: SpeechSegmenter.frameSize)  // -26 dBFS
+        var time = 0.0
+        func push(_ samples: [Float], _ probability: Float) -> [SpeechChunk] {
+            defer { time += frameDuration }
+            return segmenter.push(frame: samples, at: time, probability: probability)
+        }
+        for _ in 0..<3 { _ = push(quietNoise, 0) }
+        var chunks: [SpeechChunk] = []
+        for _ in 0..<20 {
+            chunks += push(frame, 0.9)
+            chunks += push(frame, 0.9)
+            chunks += push(wordEdge, 0.2)
+        }
+        chunks += segmenter.flush()
+        let snr = try! #require(chunks.last?.snr)
+        #expect(snr > 30)
+    }
 }
 
 @Suite struct PeopleBookTests {

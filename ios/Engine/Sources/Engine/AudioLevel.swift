@@ -24,16 +24,22 @@ enum AudioLevel {
     }
 }
 
-/// Running estimate of the background noise level, from frames the VAD calls non-speech.
+/// Background noise level: the quiet end of the last ~30 s of frames the VAD calls non-speech.
+/// Frames are 256 ms, so in fluent speech most "non-speech" frames are word edges, not silence.
+/// An average of them sits just under the voice and fails the SNR check in a silent room.
 struct NoiseFloor {
-    private(set) var dbfs: Float?
-    private let smoothing: Float = 0.1
+    private static let window = 120
+    private static let percentile = 0.1
+    private var recent: [Float] = []
+
+    var dbfs: Float? {
+        guard !recent.isEmpty else { return nil }
+        let sorted = recent.sorted()
+        return sorted[Int(Double(sorted.count - 1) * Self.percentile)]
+    }
 
     mutating func add(frameDBFS: Float) {
-        guard let current = dbfs else {
-            dbfs = frameDBFS
-            return
-        }
-        dbfs = current + smoothing * (frameDBFS - current)
+        recent.append(frameDBFS)
+        if recent.count > Self.window { recent.removeFirst() }
     }
 }

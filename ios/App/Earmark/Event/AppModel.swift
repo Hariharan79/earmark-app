@@ -106,6 +106,8 @@ final class AppModel {
             progress.cancel()
             guard phase == .enrolling else { return false }
 
+            // The first check also waits for the voice models to download, which can take a while.
+            statusMessage = "Checking your voice… (first run downloads the voice models, keep wifi on)"
             switch await engine.enrollWearer(samples: samples) {
             case .success:
                 statusMessage = nil

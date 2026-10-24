@@ -33,7 +33,9 @@ struct VerificationContext: Sendable {
     let candidates: [Candidate]
     /// The chunks' embeddings, merged into whoever the decision lands on.
     let embeddings: [[Float]]
-    /// Latest transcript snippet, once transcription exists.
+    /// When the chunks were said (event time), carried along to whoever the decision lands on.
+    var speech: [ClosedRange<TimeInterval>] = []
+    /// Latest transcript snippet, for Jev.
     var transcript: String?
 }
 

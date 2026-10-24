@@ -63,6 +63,15 @@ public struct EngineConfig: Sendable {
     /// The wearer's enrollment reading must contain at least this much speech.
     public var minEnrollmentSpeech: TimeInterval = 6
 
+    // MARK: Names and notes
+
+    /// The wearer's own name, so "Nice to meet you, Sandy" never names someone else Sandy.
+    public var wearerName: String?
+    /// Wait this long after someone speaks before reading the transcript, so it has time to finalize.
+    public var transcriptDelay: TimeInterval = 2
+    /// How many of a person's most recent chunks to read for their name and note.
+    public var transcriptChunks = 8
+
     // MARK: Warnings
 
     /// Warn when nothing louder than `quietWarningDBFS` arrives for this long.

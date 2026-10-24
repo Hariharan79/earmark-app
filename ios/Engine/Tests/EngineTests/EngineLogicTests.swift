@@ -128,6 +128,21 @@ private func voice(_ axis: Int, toward other: Int? = nil, by amount: Float = 0, 
         #expect(book.answer(second, .yes, at: 43, eventStart: start) == nil)  // answered prompts are gone
     }
 
+    @Test func tracksWhoSpokeWhenAndNeverRenames() {
+        var book = PeopleBook(config: EngineConfig(), demoMode: false)
+        _ = book.ingest(voice(0), at: 4, speech: 0...4)
+        #expect(book.lastSpoke == nil)
+        _ = book.ingest(voice(0), at: 8, speech: 4...8)
+        let id = try! #require(book.lastSpoke)
+        _ = book.ingest(voice(0), at: 12, speech: 8...12)
+        #expect(book.person(id)?.speech == [0...4, 4...8, 8...12])
+
+        #expect(book.introduce(id, Introduction(name: "Priya", note: "")) != nil)
+        #expect(book.introduce(id, Introduction(name: "Pria", note: "robotics at Stanford"))?.name == "Priya")
+        #expect(book.introduce(id, Introduction(name: "Pria", note: "something else")) == nil)
+        #expect(book.person(id)?.whisperText == "That's Priya, robotics at Stanford.")
+    }
+
     @Test func spokenTextUsesNameAndNote() {
         var person = Person(id: UUID(), name: nil, note: "", signature: VoiceSignature([voice(0)]), firstHeard: 0, lastHeard: 0)
         #expect(person.displayNote == "Unnamed")

@@ -24,6 +24,11 @@ public actor VoiceEngine: EarmarkEngine {
     private var frameTime: TimeInterval = 0
     private var lastLoudTime: TimeInterval = 0
     private var lastWarningTime: TimeInterval = -.infinity
+    private var transcriber: Transcriber?
+    /// People with a name lookup already scheduled.
+    private var naming: Set<UUID> = []
+    /// Changes every event, so late name lookups from an ended event are dropped.
+    private var eventID = UUID()
 
     public init(config: EngineConfig = EngineConfig()) {
         self.init(
@@ -61,13 +66,30 @@ public actor VoiceEngine: EarmarkEngine {
     /// Downloads (first run only) and loads the models. Optional: everything else loads them on demand.
     public func prepare() async throws {
         _ = try await models()
+        do {
+            try await Transcriber.installModelIfNeeded()
+        } catch {
+            // Names can wait; voices are what matter. start() retries the download.
+            log.error("Speech model install failed: \(error)")
+        }
+        log.info("Foundation Models \(NameExtractor.modelStatus)")
     }
 
     // MARK: - EarmarkEngine
 
     public func startEvent(demoMode: Bool) async {
+        await stopTranscriber()
         reset(demoMode: demoMode)
         eventStart = Date()
+        let transcriber = Transcriber()
+        self.transcriber = transcriber
+        Task { [log] in
+            do {
+                try await transcriber.start()
+            } catch {
+                log.error("Transcriber failed to start, names will be missing: \(error)")
+            }
+        }
         Task { try? await prepare() }
     }
 
@@ -111,6 +133,7 @@ public actor VoiceEngine: EarmarkEngine {
         if let event = book.answer(id, answer, at: frameTime, eventStart: eventStart) {
             eventSink.yield(event)
         }
+        scheduleNaming()
     }
 
     public func listPeople() async -> [PersonSummary] {
@@ -122,6 +145,7 @@ public actor VoiceEngine: EarmarkEngine {
 
     public func endEvent() async -> Int {
         let count = book.people.count
+        await stopTranscriber()
         reset(demoMode: false)
         eventStart = nil
         return count
@@ -137,6 +161,13 @@ public actor VoiceEngine: EarmarkEngine {
         frameTime = 0
         lastLoudTime = 0
         lastWarningTime = -.infinity
+        naming = []
+        eventID = UUID()
+    }
+
+    private func stopTranscriber() async {
+        await transcriber?.stop()
+        transcriber = nil
     }
 
     private func models() async throws -> LoadedModels {
@@ -155,7 +186,15 @@ public actor VoiceEngine: EarmarkEngine {
     private func process(_ chunk: AudioChunk) async {
         // Without the wearer's signature we can't tell them apart from everyone else, so wait for enrollment.
         guard eventStart != nil, wearer != nil else { return }
-        if frameBuffer.isEmpty { frameTime = chunk.timestamp }
+        transcriber?.feed(chunk)
+        // A jump in the app's timestamps (mic restarted after Siri or a call) means the buffered
+        // audio no longer joins up with this chunk. Drop it and resync, or event time drifts
+        // and the re-meet gap is measured wrong.
+        let expected = frameTime + AudioLevel.duration(frameBuffer.count)
+        if frameBuffer.isEmpty || abs(chunk.timestamp - expected) > 0.5 {
+            frameBuffer = []
+            frameTime = chunk.timestamp
+        }
         frameBuffer += chunk.samples
 
         while frameBuffer.count >= SpeechSegmenter.frameSize {
@@ -186,7 +225,8 @@ public actor VoiceEngine: EarmarkEngine {
         guard checked.accepted, let embedding = checked.embedding else { return }
 
         let time = speech.start + speech.speechDuration
-        switch book.ingest(embedding, at: time) {
+        let said = speech.start...(speech.start + AudioLevel.duration(speech.samples.count))
+        switch book.ingest(embedding, at: time, speech: said) {
         case .nothing:
             break
         case let .saved(person):
@@ -197,6 +237,42 @@ public actor VoiceEngine: EarmarkEngine {
                 eventSink.yield(event)
             }
         }
+        scheduleNaming()
+    }
+
+    // MARK: - Names and notes
+
+    /// After someone speaks, look for their name and a note in what they said, unless both are known.
+    private func scheduleNaming() {
+        guard transcriber != nil, let id = book.lastSpoke, let person = book.person(id),
+              person.name == nil || person.note.isEmpty,
+              naming.insert(id).inserted
+        else { return }
+        let event = eventID
+        let delay = config.transcriptDelay
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(delay))
+            await self?.fillIntroduction(id, event: event)
+        }
+    }
+
+    private func fillIntroduction(_ id: UUID, event: UUID) async {
+        naming.remove(id)
+        guard event == eventID, let transcriber, let person = book.person(id) else { return }
+
+        // Chunks inside one sentence return the same sentence, so drop repeats.
+        var sentences: [String] = []
+        for range in person.speech.suffix(config.transcriptChunks) {
+            let text = await transcriber.text(from: range.lowerBound, to: range.upperBound)
+            if !text.isEmpty, !sentences.contains(text) { sentences.append(text) }
+        }
+        guard !sentences.isEmpty else { return }
+
+        let extractor = NameExtractor(ignoredNames: Set([config.wearerName].compactMap { $0 }))
+        let introduction = await extractor.extract(from: sentences.joined(separator: " "))
+        guard event == eventID, let eventStart, let updated = book.introduce(id, introduction) else { return }
+        log.info("Filled in name/note for a person: name \(updated.name == nil ? "missing" : "found")")
+        eventSink.yield(.personUpdated(updated.summary(eventStart: eventStart)))
     }
 
     private func warnIfQuiet(_ frame: [Float], at time: TimeInterval) {

@@ -9,6 +9,8 @@ struct Person: Sendable {
     var signature: VoiceSignature
     let firstHeard: TimeInterval
     var lastHeard: TimeInterval
+    /// When their accepted chunks happened (event time), so their own words can be found in the transcript.
+    var speech: [ClosedRange<TimeInterval>] = []
 
     func summary(eventStart: Date) -> PersonSummary {
         PersonSummary(
@@ -50,6 +52,7 @@ struct Person: Sendable {
 struct PendingPrompt: Sendable {
     let personID: UUID
     let embeddings: [[Float]]
+    var speech: [ClosedRange<TimeInterval>] = []
 }
 
 /// Who's been met, and the matching state machine (PRD 6.3, 7.2, 7.3). No I/O, no models,
@@ -65,10 +68,13 @@ struct PeopleBook {
     let config: EngineConfig
     let remeetGap: TimeInterval
     private(set) var people: [Person] = []
-    private var unknown: [(embedding: [Float], time: TimeInterval)] = []
+    private var unknown: [(embedding: [Float], time: TimeInterval, speech: ClosedRange<TimeInterval>?)] = []
     private var attempts: [Attempt] = []
     private var attemptEmbeddings: [[Float]] = []
+    private var attemptSpeech: [ClosedRange<TimeInterval>] = []
     private(set) var prompts: [PromptID: PendingPrompt] = [:]
+    /// Who the last `ingest`, `apply` or `answer` gave speech to, so the engine can look for their name.
+    private(set) var lastSpoke: UUID?
 
     init(config: EngineConfig, demoMode: Bool) {
         self.config = config
@@ -92,13 +98,13 @@ struct PeopleBook {
         return .unsure
     }
 
-    /// Takes one clean chunk that isn't the wearer.
-    mutating func ingest(_ embedding: [Float], at time: TimeInterval) -> Step {
+    /// Takes one clean chunk that isn't the wearer. `speech` is when it was said, for transcript lookup.
+    mutating func ingest(_ embedding: [Float], at time: TimeInterval, speech: ClosedRange<TimeInterval>? = nil) -> Step {
+        lastSpoke = nil
         let ranking = ranked(embedding)
         guard let top = ranking.first, band(top.similarity) != .low else {
-            attempts = []
-            attemptEmbeddings = []
-            return collectUnknown(embedding, at: time)
+            resetAttempts()
+            return collectUnknown(embedding, at: time, speech: speech)
         }
 
         let band = band(top.similarity)
@@ -107,7 +113,14 @@ struct PeopleBook {
 
         // Still mid-conversation with them: learn from clear chunks, stay quiet.
         if time - person.lastHeard < remeetGap {
-            if band == .high { update(person.id) { $0.signature.add(embedding); $0.lastHeard = time } }
+            if band == .high {
+                update(person.id) {
+                    $0.signature.add(embedding)
+                    $0.lastHeard = time
+                    $0.speech += [speech].compactMap { $0 }
+                }
+                lastSpoke = person.id
+            }
             return .nothing
         }
 
@@ -116,8 +129,7 @@ struct PeopleBook {
 
         // They're back. Collect clean chunks in a row, then decide.
         if let last = attempts.last, last.personID != person.id || time - last.time > config.attemptWindow {
-            attempts = []
-            attemptEmbeddings = []
+            resetAttempts()
         }
         let runnerUp = ranking.dropFirst().first?.similarity ?? 0
         attempts.append(Attempt(
@@ -128,6 +140,7 @@ struct PeopleBook {
             time: time
         ))
         attemptEmbeddings.append(embedding)
+        if let speech { attemptSpeech.append(speech) }
         guard attempts.count >= config.verifyChunks else { return .nothing }
 
         let context = VerificationContext(
@@ -141,44 +154,59 @@ struct PeopleBook {
                     secondsSinceHeard: time - $0.person.lastHeard
                 )
             },
-            embeddings: attemptEmbeddings
+            embeddings: attemptEmbeddings,
+            speech: attemptSpeech
         )
-        attempts = []
-        attemptEmbeddings = []
+        resetAttempts()
         return .verify(context)
     }
 
     /// Acts on a verifier's decision. Returns the event for the app, if any.
     mutating func apply(_ verdict: Verdict, _ context: VerificationContext, at time: TimeInterval, eventStart: Date) -> EngineEvent? {
+        lastSpoke = nil
         switch verdict {
         case let .whisper(id):
-            guard let person = merge(context.embeddings, into: id, at: time) else { return nil }
+            guard let person = merge(context.embeddings, context.speech, into: id, at: time) else { return nil }
             return .whisper(text: person.whisperText, personID: id)
         case let .ask(id):
             guard let person = person(id) else { return nil }
             let promptID = PromptID()
-            prompts[promptID] = PendingPrompt(personID: id, embeddings: context.embeddings)
+            prompts[promptID] = PendingPrompt(personID: id, embeddings: context.embeddings, speech: context.speech)
             return .askWearer(promptID: promptID, text: person.askText, personID: id)
         case .newPerson:
-            return .personSaved(addPerson(context.embeddings, at: time).summary(eventStart: eventStart))
+            return .personSaved(addPerson(context.embeddings, context.speech, at: time).summary(eventStart: eventStart))
         }
     }
 
     /// Nod = merge into them. Shake or timeout = save as a new person (PRD 5).
     mutating func answer(_ id: PromptID, _ answer: PromptAnswer, at time: TimeInterval, eventStart: Date) -> EngineEvent? {
+        lastSpoke = nil
         guard let prompt = prompts.removeValue(forKey: id) else { return nil }
         switch answer {
         case .yes:
-            return merge(prompt.embeddings, into: prompt.personID, at: time)
+            return merge(prompt.embeddings, prompt.speech, into: prompt.personID, at: time)
                 .map { .personUpdated($0.summary(eventStart: eventStart)) }
         case .no, .timeout:
-            return .personSaved(addPerson(prompt.embeddings, at: time).summary(eventStart: eventStart))
+            return .personSaved(addPerson(prompt.embeddings, prompt.speech, at: time).summary(eventStart: eventStart))
+        }
+    }
+
+    /// Fills in a name or note that's still missing. Returns the person if anything changed.
+    mutating func introduce(_ id: UUID, _ introduction: Introduction) -> Person? {
+        guard let person = person(id) else { return nil }
+        let current = Introduction(name: person.name, note: person.note)
+        let filled = current.filling(from: introduction)
+        guard filled != current else { return nil }
+        return update(id) {
+            $0.name = filled.name
+            $0.note = filled.note
         }
     }
 
     /// A voice nobody matches. Saved only after enough consistent chunks (PRD 6.3).
-    private mutating func collectUnknown(_ embedding: [Float], at time: TimeInterval) -> Step {
-        unknown.removeAll { time - $0.time > config.newPersonWindow }
+    private mutating func collectUnknown(_ embedding: [Float], at time: TimeInterval, speech: ClosedRange<TimeInterval>?) -> Step {
+        let window = config.newPersonWindow
+        unknown.removeAll { time - $0.time > window }
         if !unknown.isEmpty {
             let pending = VoiceSignature(unknown.map(\.embedding))
             if pending.similarity(to: embedding) < config.newPersonConsistency {
@@ -186,32 +214,52 @@ struct PeopleBook {
                 unknown = []
             }
         }
-        unknown.append((embedding, time))
+        unknown.append((embedding, time, speech))
         guard unknown.count >= config.newPersonChunks else { return .nothing }
 
-        let person = addPerson(unknown.map(\.embedding), at: time, firstHeard: unknown[0].time)
+        let person = addPerson(unknown.map(\.embedding), unknown.compactMap(\.speech), at: time, firstHeard: unknown[0].time)
         unknown = []
         return .saved(person)
     }
 
-    private mutating func addPerson(_ embeddings: [[Float]], at time: TimeInterval, firstHeard: TimeInterval? = nil) -> Person {
+    private mutating func addPerson(
+        _ embeddings: [[Float]],
+        _ speech: [ClosedRange<TimeInterval>],
+        at time: TimeInterval,
+        firstHeard: TimeInterval? = nil
+    ) -> Person {
         let person = Person(
             id: UUID(),
             name: nil,
             note: "",
             signature: VoiceSignature(embeddings),
             firstHeard: firstHeard ?? time,
-            lastHeard: time
+            lastHeard: time,
+            speech: speech
         )
         people.append(person)
+        lastSpoke = person.id
         return person
     }
 
-    private mutating func merge(_ embeddings: [[Float]], into id: UUID, at time: TimeInterval) -> Person? {
-        update(id) { person in
+    private mutating func merge(
+        _ embeddings: [[Float]],
+        _ speech: [ClosedRange<TimeInterval>],
+        into id: UUID,
+        at time: TimeInterval
+    ) -> Person? {
+        lastSpoke = id
+        return update(id) { person in
             for embedding in embeddings { person.signature.add(embedding) }
             person.lastHeard = time
+            person.speech += speech
         }
+    }
+
+    private mutating func resetAttempts() {
+        attempts = []
+        attemptEmbeddings = []
+        attemptSpeech = []
     }
 
     @discardableResult

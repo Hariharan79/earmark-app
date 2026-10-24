@@ -257,10 +257,12 @@ public actor VoiceEngine: EarmarkEngine {
 
     // MARK: - Names and notes
 
-    /// After someone speaks, look for their name and a note in what they said, unless both are known.
+    /// After someone speaks, look for their name and a note in what they said. During their first
+    /// `noteRefineSpeech` seconds of speech this runs after every chunk, so the note gets richer as
+    /// they say more. After that, only while the name or note is still missing.
     private func scheduleNaming() {
         guard transcriber != nil, let id = book.lastSpoke, let person = book.person(id),
-              person.name == nil || person.note.isEmpty,
+              person.name == nil || person.note.isEmpty || isFirstMeeting(person),
               naming.insert(id).inserted
         else { return }
         let event = eventID
@@ -275,9 +277,11 @@ public actor VoiceEngine: EarmarkEngine {
         naming.remove(id)
         guard event == eventID, let transcriber, let person = book.person(id) else { return }
 
+        // First meeting: everything they've said so far, so details from later sentences count.
         // Chunks inside one sentence return the same sentence, so drop repeats.
+        let ranges = isFirstMeeting(person) ? person.speech[...] : person.speech.suffix(config.transcriptChunks)
         var sentences: [String] = []
-        for range in person.speech.suffix(config.transcriptChunks) {
+        for range in ranges {
             let text = await transcriber.text(from: range.lowerBound, to: range.upperBound)
             if !text.isEmpty, !sentences.contains(text) { sentences.append(text) }
         }
@@ -287,8 +291,12 @@ public actor VoiceEngine: EarmarkEngine {
         let introduction = await extractor.extract(from: sentences.joined(separator: " "))
         log.info("Naming from \(sentences.count) sentences: \"\(sentences.joined(separator: " "))\" → name \(introduction.name ?? "none"), note \"\(introduction.note)\"")
         guard event == eventID, let eventStart, let updated = book.introduce(id, introduction) else { return }
-        log.info("Filled in name/note for a person: name \(updated.name == nil ? "missing" : "found")")
+        log.info("Filled in name/note for a person: name \(updated.name == nil ? "missing" : "found"), note \(updated.note.split(separator: " ").count) words")
         eventSink.yield(.personUpdated(updated.summary(eventStart: eventStart)))
+    }
+
+    private func isFirstMeeting(_ person: Person) -> Bool {
+        person.speechSeconds <= config.noteRefineSpeech
     }
 
     private func warnIfQuiet(_ frame: [Float], at time: TimeInterval) {

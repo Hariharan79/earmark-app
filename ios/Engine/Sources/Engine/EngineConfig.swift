@@ -73,6 +73,9 @@ public struct EngineConfig: Sendable {
     public var transcriptDelay: TimeInterval = 2
     /// How many of a person's most recent chunks to read for their name and note.
     public var transcriptChunks = 8
+    /// For someone's first this-many seconds of speech, re-read everything they've said after each
+    /// chunk, and let a richer note replace a thinner one. The name never changes once set.
+    public var noteRefineSpeech: TimeInterval = 40
 
     // MARK: Warnings
 

@@ -53,4 +53,60 @@ import Testing
         // No overlap at all.
         #expect(!S(start: 90, end: 95, text: "x").belongs(from: 100, to: 104))
     }
+
+    // MARK: Richer notes
+
+    @Test func detailInThirdSentenceEndsUpInNote() async {
+        let got = await extractor.extract(from: "Hi, I'm Hari. Yeah, I'm a student here. Right now I'm building Earmark, an app that whispers names.")
+        #expect(got.name == "Hari")
+        #expect(got.note == "building Earmark, an app that whispers names")
+    }
+
+    /// What the real transcriber wrote in the end-to-end test: a made-up project name in lowercase.
+    @Test func lowercaseProjectNameStillBeatsGenericNote() async {
+        let got = await extractor.extract(from: "Hi, I'm Priya. Nice to meet you. Yeah, I'm a student here in my last year. Right now I'm building earmark, an app that whispers names.")
+        #expect(got.note == "building earmark, an app that whispers names")
+        let merged = Introduction(name: "Priya", note: "a student here in my last year")
+            .filling(from: Introduction(name: nil, note: "building earmark, an app that whispers names"))
+        #expect(merged.note == "building earmark, an app that whispers names")
+    }
+
+    @Test func noteStopsAtCommaThatStartsANewThought() async {
+        let got = await extractor.extract(from: "So yeah. I'm a designer at Figma, been there two years.")
+        #expect(got.note == "a designer at Figma")
+    }
+
+    @Test func noteNeverEndsOnAPreposition() {
+        let note = IntroductionRule.note(in: "I'm building a tool that turns long meeting recordings into short notes for teams")
+        #expect(note == "building a tool that turns long meeting recordings")
+    }
+
+    @Test func richerNoteReplacesThinnerButNameStays() {
+        let first = Introduction(name: "Hari", note: "a student here")
+        let later = first.filling(from: Introduction(name: "Harry", note: "building Earmark, an app that whispers names"))
+        #expect(later.name == "Hari")
+        #expect(later.note == "building Earmark, an app that whispers names")
+        // A thinner reading later on doesn't undo it.
+        #expect(later.filling(from: Introduction(name: nil, note: "a student")) == later)
+        // Same richness, different wording: no flip-flop.
+        let same = Introduction(name: "Priya", note: "robotics at Stanford")
+        #expect(same.filling(from: Introduction(name: nil, note: "Stanford robotics lab")) == same)
+        #expect(same.filling(from: Introduction(name: nil, note: "robots at Stanford")) == same)
+        // More specifics wins even when shorter isn't the issue.
+        #expect(same.filling(from: Introduction(name: nil, note: "warehouse robot arms at Stanford's AI lab")).note
+            == "warehouse robot arms at Stanford's AI lab")
+    }
+
+    @Test func peopleBookReportsNoteUpgrades() {
+        var book = PeopleBook(config: EngineConfig(), demoMode: true)
+        var v = [Float](repeating: 0, count: 8); v[0] = 1
+        _ = book.ingest(v, at: 0, speech: 0...3)
+        guard case let .saved(person) = book.ingest(v, at: 4, speech: 4...7) else { Issue.record("not saved"); return }
+        #expect(person.speechSeconds == 6)
+        #expect(book.introduce(person.id, Introduction(name: "Hari", note: "a student here"))?.note == "a student here")
+        #expect(book.introduce(person.id, Introduction(name: nil, note: "building Earmark, an app that whispers names"))?.note
+            == "building Earmark, an app that whispers names")
+        #expect(book.introduce(person.id, Introduction(name: "Harry", note: "a student")) == nil)
+        #expect(book.person(person.id)?.name == "Hari")
+    }
 }

@@ -10,13 +10,43 @@ struct Introduction: Sendable, Equatable {
 
     static let empty = Introduction(name: nil, note: "")
 
-    /// Fills in only what's still missing. A name or note, once set, is never replaced,
-    /// so a later misheard sentence can't rename someone (PRD 4: a wrong name is the worst outcome).
+    /// Merges a newer reading of what they said. A name, once set, is never replaced, so a later
+    /// misheard sentence can't rename someone (PRD 4: a wrong name is the worst outcome). A note is
+    /// replaced only by a richer one, so it improves as they talk but doesn't flip between equals.
     func filling(from newer: Introduction) -> Introduction {
         Introduction(
             name: name ?? newer.name,
-            note: note.isEmpty ? newer.note : note
+            note: Self.isRicher(newer.note, than: note) ? newer.note : note
         )
+    }
+
+    /// What someone is doing or building beats who they are ("building earmark, an app…" over
+    /// "a student here"). Then more specifics (capitalized names: a company, school) wins, then more words.
+    /// Doing-ness can't rely on capitals: the transcriber writes made-up project names in lowercase.
+    static func isRicher(_ candidate: String, than current: String) -> Bool {
+        guard !candidate.isEmpty, candidate != current else { return false }
+        let new = richness(candidate), old = richness(current)
+        if new.doing != old.doing { return new.doing }
+        return new.specifics != old.specifics ? new.specifics > old.specifics : new.words > old.words
+    }
+
+    private static let doingVerbs: Set<String> = [
+        "building", "making", "starting", "founding", "running", "researching", "studying", "developing",
+        "designing", "launching", "working", "writing", "creating", "leading", "teaching",
+    ]
+    private static let projectNouns: Set<String> = [
+        "app", "apps", "startup", "company", "project", "platform", "tool", "product", "thesis", "game",
+    ]
+
+    private static func richness(_ note: String) -> (doing: Bool, specifics: Int, words: Int) {
+        let words = note.split(separator: " ")
+        let plain = words.map { $0.lowercased().trimmingCharacters(in: .punctuationCharacters) }
+        let doing = plain.first.map(doingVerbs.contains) == true || plain.contains(where: projectNouns.contains)
+        let specifics = words.filter { word in
+            guard let first = word.first, first.isUppercase else { return false }
+            return word != "I" && !word.hasPrefix("I'")
+        }.count
+        return (doing, specifics, words.count)
     }
 }
 
@@ -91,7 +121,7 @@ struct NameExtractor: Sendable {
         @Guide(description: "The speaker's own first name, only if they clearly said it about themselves, for example Priya from \"Hi, I'm Priya\". Leave it empty if they never said their own name. Never guess.")
         var name: String?
 
-        @Guide(description: "What they work on, study, or talked about, in 2 to 6 words, for example \"robotics at Stanford\" or \"building a fintech app\". Lowercase except proper nouns, no period. Empty if there's nothing to note.")
+        @Guide(description: "What they work on, study, or talked about, in 3 to 8 words, for example \"building Earmark, an app that whispers names\" or \"robotics research at Stanford\". Prefer specifics they said (project, company, school names) over generic topics. Must read naturally after \"That's Priya, \". Lowercase except proper nouns, no period. Empty if there's nothing to note.")
         var note: String
     }
 
@@ -199,30 +229,41 @@ enum IntroductionRule {
 
     // MARK: Notes
 
-    /// What follows "I work on", "I'm building" and friends, up to the end of the clause.
+    /// What follows "I work on", "I'm building" and friends, up to the end of the sentence.
     /// Group 1 is a verb to keep ("building a fintech app"), group 2 the phrase.
     nonisolated(unsafe) private static let notePatterns: [Regex<(Substring, Substring, Substring)>] = [
-        #/(?i)\bi(?:'m| am)? ?(?:work|working) (?:on|in|at|for|with) ()([^.,;!?]+)/#,
-        #/(?i)\bi(?:'m| am) (building|making|starting|studying|researching|founding|running) ([^.,;!?]+)/#,
-        #/(?i)\bi (?:study|research|build|make|run) ()([^.,;!?]+)/#,
-        #/(?i)\bi(?:'m| am) (from|at|with) ([^.,;!?]+)/#,
-        #/(?i)\bi(?:'m| am) (an?) ([^.,;!?]+)/#,
+        #/(?i)\bi(?:'m| am)? ?(?:work|working) (?:on|in|at|for|with) ()([^.;!?]+)/#,
+        #/(?i)\bi(?:'m| am) (building|making|starting|studying|researching|founding|running) ([^.;!?]+)/#,
+        #/(?i)\bi (?:study|research|build|make|run) ()([^.;!?]+)/#,
+        #/(?i)\bi(?:'m| am) (from|at|with) ([^.;!?]+)/#,
+        #/(?i)\bi(?:'m| am) (an?) ([^.;!?]+)/#,
     ]
 
-    nonisolated(unsafe) private static let trailingFiller = #/(?i)(?:\s+(?:and|but|so|um|uh|like|you know|right|actually))+$/#
+    /// Where the phrase stops: a comma, unless it opens an "a/an/the ..." description
+    /// ("building Earmark, an app that..."), or the start of the next clause ("... and I love hiking").
+    nonisolated(unsafe) private static let clauseEnd = #/(?i),(?!\s*(?:an?|the)\s)|\s+(?:and i|but i|so i|and we|i'm|i am)\b/#
+    nonisolated(unsafe) private static let trailingFiller = #/(?i)(?:\s+(?:and|but|so|um|uh|like|you know|right|actually|the|a|an|of|to|for|in|on|at|into|with|that))+$/#
 
+    /// The richest note anywhere in what they said, not just the first one, since the specifics
+    /// often come a few sentences in ("I'm a student… I'm building Earmark, an app that whispers names").
     static func note(in transcript: String) -> String? {
-        let matches = notePatterns.compactMap { transcript.firstMatch(of: $0) }
-        guard let first = matches.min(by: { $0.range.lowerBound < $1.range.lowerBound }) else { return nil }
+        let notes = notePatterns.flatMap { transcript.matches(of: $0) }
+            .sorted { $0.range.lowerBound < $1.range.lowerBound }
+            .compactMap { note(from: $0.output.1, $0.output.2) }
+        return notes.reduce(nil) { best, note in
+            guard let best else { return note }
+            return Introduction.isRicher(note, than: best) ? note : best
+        }
+    }
 
-        // Stop at the next clause ("... at Stanford and I love hiking" → "... at Stanford").
-        var phrase = String(first.output.2)
-        if let cut = phrase.firstMatch(of: #/(?i)\s+(?:and i|but i|so i|and we|i'm|i am)\b/#) {
+    private static func note(from verb: Substring, _ rawPhrase: Substring) -> String? {
+        var phrase = String(rawPhrase)
+        if let cut = phrase.firstMatch(of: clauseEnd) {
             phrase = String(phrase[..<cut.range.lowerBound])
         }
-        let words = phrase.split(separator: " ").prefix(6).joined(separator: " ")
-        var note = words.replacing(trailingFiller, with: "")
-        let verb = first.output.1
+        let maxWords = verb.isEmpty ? 8 : 7
+        var note = phrase.split(separator: " ").prefix(maxWords).joined(separator: " ")
+            .replacing(trailingFiller, with: "")
         if !verb.isEmpty {
             note = "\(verb.lowercased()) \(note)"
         }

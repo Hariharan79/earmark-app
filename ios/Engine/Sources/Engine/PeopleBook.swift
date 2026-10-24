@@ -12,6 +12,11 @@ struct Person: Sendable {
     /// When their accepted chunks happened (event time), so their own words can be found in the transcript.
     var speech: [ClosedRange<TimeInterval>] = []
 
+    /// How long they've talked in total, from their accepted chunks.
+    var speechSeconds: TimeInterval {
+        speech.reduce(0) { $0 + ($1.upperBound - $1.lowerBound) }
+    }
+
     func summary(eventStart: Date) -> PersonSummary {
         PersonSummary(
             id: id,
@@ -191,7 +196,7 @@ struct PeopleBook {
         }
     }
 
-    /// Fills in a name or note that's still missing. Returns the person if anything changed.
+    /// Fills in a missing name, or a missing or richer note (`Introduction.filling`). Returns the person if anything changed.
     mutating func introduce(_ id: UUID, _ introduction: Introduction) -> Person? {
         guard let person = person(id) else { return nil }
         let current = Introduction(name: person.name, note: person.note)

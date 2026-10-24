@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(./roles.json)",
+      "Edit(./setup.sh)",
+      "Edit(./.githooks/**)",
+      "Edit(./CLAUDE.md)",
+      "Edit(./.claude/settings.json)",
+      "Edit(./ios/Secrets.xcconfig)",
+      "Read(./ios/Secrets.xcconfig)",
+      "Bash(git commit --no-verify:*)",
+      "Bash(git commit -n:*)"
+    ]
+  }
+}

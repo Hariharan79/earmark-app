@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Rejects commits that touch files outside your role (see roles.json).
+# Guardrail files need: EARMARK_GUARDRAIL_EDIT=1 git commit ...
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+if [[ ! -f .earmark-role ]]; then
+  echo "pre-commit: run ./setup.sh <hari|jiwon|sandy> first" >&2
+  exit 1
+fi
+PERSON="$(sed -n 1p .earmark-role)"
+ROLES="$(sed -n 2p .earmark-role)"
+
+allowed_prefixes() {
+  jq -r --arg roles "$ROLES" '
+    ($roles | split(" ")) as $mine
+    | [ .roles | to_entries[] | select(.key as $k | $mine | index($k)) | .value.paths[] ]
+      + .shared | .[]' roles.json
+}
+
+owner_of() {
+  jq -r --arg f "$1" '
+    [ .roles[] | select(any(.paths[]; . as $p | $f | startswith($p))) | .owner ] | first // "nobody"' roles.json
+}
+
+ALLOWED="$(allowed_prefixes)"
+PROTECTED="$(jq -r '.protected[]' roles.json)"
+BAD=0
+
+while IFS= read -r file; do
+  [[ -z "$file" ]] && continue
+  is_protected=0
+  while IFS= read -r p; do
+    [[ "$file" == "$p"* ]] && is_protected=1
+  done <<< "$PROTECTED"
+  if [[ $is_protected -eq 1 ]]; then
+    if [[ "${EARMARK_GUARDRAIL_EDIT:-}" != "1" ]]; then
+      echo "pre-commit: $file is a guardrail file. Agree with your partner, then commit with EARMARK_GUARDRAIL_EDIT=1" >&2
+      BAD=1
+    fi
+    continue
+  fi
+  ok=0
+  while IFS= read -r p; do
+    [[ "$file" == "$p"* ]] && ok=1
+  done <<< "$ALLOWED"
+  if [[ $ok -eq 0 ]]; then
+    echo "pre-commit: $file belongs to $(owner_of "$file"), not $PERSON. Ask them to change it." >&2
+    BAD=1
+  fi
+done < <(git diff --cached --name-only --diff-filter=ACMRD)
+
+exit $BAD

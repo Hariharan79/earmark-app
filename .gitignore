@@ -1,0 +1,16 @@
+# secrets
+ios/Secrets.xcconfig
+.env
+
+# per-person guardrail state (written by setup.sh)
+.earmark-role
+.claude/settings.local.json
+
+# Xcode
+DerivedData/
+xcuserdata/
+*.xcuserstate
+build/
+
+# macOS
+.DS_Store

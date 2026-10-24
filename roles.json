@@ -1,0 +1,65 @@
+{
+  "people": {
+    "hari": {
+      "display": "Hari",
+      "roles": [
+        "app"
+      ]
+    },
+    "sandy": {
+      "display": "Sandy",
+      "roles": [
+        "engine"
+      ],
+      "takeover": [
+        "app"
+      ]
+    },
+    "jiwon": {
+      "display": "Jiwon",
+      "roles": [
+        "presentation"
+      ],
+      "needsXcode": false
+    }
+  },
+  "roles": {
+    "engine": {
+      "owner": "Sandy",
+      "paths": [
+        "ios/Engine/"
+      ]
+    },
+    "app": {
+      "owner": "Hari",
+      "paths": [
+        "ios/App/",
+        "ios/Earmark.xcodeproj/",
+        "ios/Earmark.xcworkspace/"
+      ]
+    },
+    "presentation": {
+      "owner": "Jiwon",
+      "paths": [
+        "presentation/"
+      ]
+    }
+  },
+  "shared": [
+    "ios/Shared/",
+    "docs/",
+    "PRD.md",
+    "SETUP.md",
+    "README.md",
+    "ios/README.md",
+    ".gitignore",
+    "ios/Secrets.example.xcconfig"
+  ],
+  "protected": [
+    "roles.json",
+    "setup.sh",
+    ".githooks/",
+    "CLAUDE.md",
+    ".claude/settings.json"
+  ]
+}

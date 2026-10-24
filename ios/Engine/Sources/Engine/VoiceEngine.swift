@@ -98,6 +98,13 @@ public actor VoiceEngine: EarmarkEngine {
             let models = try await models()
             let (chunks, noise) = try await segmentRecording(samples, detector: models.detector, config: config)
             let speech = chunks.reduce(0) { $0 + $1.speechDuration }
+            log.info("""
+                Enrollment check: \(AudioLevel.duration(samples.count), format: .fixed(precision: 1)) s recorded, \
+                whole-recording level \(AudioLevel.rmsDBFS(samples), format: .fixed(precision: 1)) dBFS, \
+                \(chunks.count) chunks, \(speech, format: .fixed(precision: 1)) s speech, \
+                speech level \(AudioLevel.rmsDBFS(chunks.flatMap(\.samples)), format: .fixed(precision: 1)) dBFS, \
+                noise floor \(noise.dbfs ?? -999, format: .fixed(precision: 1)) dBFS
+                """)
             guard speech >= config.minEnrollmentSpeech else {
                 return .tooNoisy(reason: "I didn't hear enough speech. Read the whole sentence, close to the phone.")
             }
@@ -222,13 +229,21 @@ public actor VoiceEngine: EarmarkEngine {
     private func handle(_ speech: SpeechChunk, models: LoadedModels) async throws {
         guard let eventStart else { return }
         let checked = try await QualityGate(config: config, embedder: models.embedder).check(speech, wearer: wearer)
+        log.info("""
+            Chunk at \(speech.start, format: .fixed(precision: 1)) s: \
+            \(speech.speechDuration, format: .fixed(precision: 1)) s speech, \
+            \(speech.levelDBFS, format: .fixed(precision: 1)) dBFS, SNR \(speech.snr ?? -999, format: .fixed(precision: 1)), \
+            halves \(checked.halvesSimilarity ?? -9, format: .fixed(precision: 2)), \
+            wearer \(checked.wearerSimilarity ?? -9, format: .fixed(precision: 2)) → \
+            \(checked.rejection?.rawValue ?? "accepted", privacy: .public)
+            """)
         guard checked.accepted, let embedding = checked.embedding else { return }
 
         let time = speech.start + speech.speechDuration
         let said = speech.start...(speech.start + AudioLevel.duration(speech.samples.count))
         switch book.ingest(embedding, at: time, speech: said) {
         case .nothing:
-            break
+            log.info("Chunk accepted, no change yet (pending, verifying, or someone already being heard)")
         case let .saved(person):
             eventSink.yield(.personSaved(person.summary(eventStart: eventStart)))
         case let .verify(context):
@@ -270,6 +285,7 @@ public actor VoiceEngine: EarmarkEngine {
 
         let extractor = NameExtractor(ignoredNames: Set([config.wearerName].compactMap { $0 }))
         let introduction = await extractor.extract(from: sentences.joined(separator: " "))
+        log.info("Naming from \(sentences.count) sentences: \"\(sentences.joined(separator: " "))\" → name \(introduction.name ?? "none"), note \"\(introduction.note)\"")
         guard event == eventID, let eventStart, let updated = book.introduce(id, introduction) else { return }
         log.info("Filled in name/note for a person: name \(updated.name == nil ? "missing" : "found")")
         eventSink.yield(.personUpdated(updated.summary(eventStart: eventStart)))

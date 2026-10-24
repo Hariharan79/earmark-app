@@ -50,7 +50,9 @@ public struct EngineConfig: Sendable {
     /// Speech must be louder than this.
     public var minLevelDBFS: Float = -40
     /// Speech must be at least this far above the background noise.
-    public var minSNR: Float = 10
+    /// Was 10 (PRD guess). On Sandy's phone in a normal room, good chunks of one voice at one
+    /// distance measured 8 to 14 dB, so 10 threw away about half of them. Recheck after calibration.
+    public var minSNR: Float = 6
     /// The two halves of a chunk must sound like the same voice; below this we assume two people overlap.
     public var overlapCutoff: Float = 0.30
     /// Chunks this close to the wearer are the wearer talking, and get dropped.

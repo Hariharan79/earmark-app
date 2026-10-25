@@ -92,8 +92,6 @@ final class AppModel {
         router.stop()
         mic.stop()
         whisperer.stopAll()
-        eventsTask?.cancel()
-        eventsTask = nil
 
         let remembered = await engine.endEvent()
         people = []
@@ -178,16 +176,24 @@ final class AppModel {
     }
 
     /// Events are handled one at a time, so a whisper never talks over an "Is this ___?" prompt.
+    /// One listener for the app's lifetime, never cancelled: `engine.events` is a single stream, and
+    /// cancelling the task reading it ends the stream for good, so every later event would hear nothing.
     private func listenForEngineEvents(_ engine: any EarmarkEngine) {
-        eventsTask = Task {
+        guard eventsTask == nil else { return }
+        eventsTask = Task { [weak self] in
             for await event in engine.events {
-                guard !Task.isCancelled else { return }
-                await handle(event, engine: engine)
+                guard let self else { return }
+                await self.handle(event, engine: engine)
             }
         }
     }
 
     private func handle(_ event: EngineEvent, engine: any EarmarkEngine) async {
+        // Left over from an event that has ended: don't whisper or ask about it.
+        guard phase == .running || phase == .enrolling else {
+            logger.info("Dropped engine event after End: \(String(describing: event))")
+            return
+        }
         logger.info("Engine event: \(String(describing: event))")
         people = PeopleRoster.applying(event, to: people)
         switch event {

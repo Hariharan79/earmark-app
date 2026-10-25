@@ -104,11 +104,9 @@ private func voice(_ axis: Int, toward other: Int? = nil, by amount: Float = 0, 
         _ = book.ingest(voice(0), at: 0)
         _ = book.ingest(voice(0), at: 3)
         guard case .nothing = book.ingest(voice(0), at: 10) else { Issue.record("spoke mid-conversation"); return }
-        // 25 s later, past the 20 s demo gap. A good match (0.64), but not strong enough on its own:
-        // two chunks in a row, then a decision.
-        let usual = voice(0, toward: 1, by: 1.2)
-        guard case .nothing = book.ingest(usual, at: 35) else { Issue.record("decided after one chunk"); return }
-        guard case let .verify(context) = book.ingest(usual, at: 38) else { Issue.record("no decision"); return }
+        // 25 s later, past the 20 s demo gap: two chunks in a row, then a decision.
+        guard case .nothing = book.ingest(voice(0), at: 35) else { Issue.record("decided after one chunk"); return }
+        guard case let .verify(context) = book.ingest(voice(0), at: 38) else { Issue.record("no decision"); return }
         #expect(BackupRule(config: EngineConfig()).verify(context) == .whisper(book.people[0].id))
 
         let event = book.apply(.whisper(book.people[0].id), context, at: 38, eventStart: start)
@@ -117,30 +115,6 @@ private func voice(_ axis: Int, toward other: Int? = nil, by amount: Float = 0, 
         }
         // And quiet again right after.
         guard case .nothing = book.ingest(voice(0), at: 41) else { Issue.record("whispered twice"); return }
-    }
-
-    @Test func strongMatchWhispersAfterOneChunk() {
-        var book = PeopleBook(config: EngineConfig(), demoMode: true)
-        _ = book.ingest(voice(0), at: 0)
-        _ = book.ingest(voice(0), at: 3)
-        // Back after the gap, and clearly them: no waiting for a second chunk.
-        guard case let .verify(context) = book.ingest(voice(0, toward: 1, by: 0.3), at: 30) else {
-            Issue.record("waited for a second chunk"); return
-        }
-        #expect(context.attempts.count == 1)
-        #expect(BackupRule(config: EngineConfig()).verify(context) == .whisper(book.people[0].id))
-    }
-
-    @Test func strongMatchWithCloseRunnerUpStillWaits() {
-        var book = PeopleBook(config: EngineConfig(), demoMode: true)
-        _ = book.ingest(voice(0), at: 0)
-        _ = book.ingest(voice(0), at: 1)
-        _ = book.ingest(voice(1), at: 2)
-        _ = book.ingest(voice(1), at: 3)
-        // About 0.72 for both saved voices: strong, but they could be either.
-        guard case .nothing = book.ingest(voice(0, toward: 1, by: 0.95), at: 40) else {
-            Issue.record("decided on one ambiguous chunk"); return
-        }
     }
 
     @Test func closeRunnerUpMeansAsk() {

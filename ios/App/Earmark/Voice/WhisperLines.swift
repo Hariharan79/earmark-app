@@ -29,12 +29,6 @@ nonisolated enum WhisperLines {
         }
     }
 
-    /// End event: people are kept for next time.
-    static func remembering(count: Int) -> String {
-        count == 1 ? "Remembering 1 person." : "Remembering \(count) people."
-    }
-
-    /// Forget everyone.
     static func deleted(count: Int) -> String {
         count == 1 ? "Deleted 1 person." : "Deleted \(count) people."
     }

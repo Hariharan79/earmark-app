@@ -4,7 +4,6 @@ import SwiftUI
 /// The only screen. Mirrored for judges during the demo, so the people-met list is big and readable.
 struct EventScreen: View {
     @Bindable var model: AppModel
-    @State private var confirmingForget = false
 
     var body: some View {
         NavigationStack {
@@ -75,23 +74,12 @@ struct EventScreen: View {
             }
             .buttonStyle(.bordered)
             .disabled(model.isTestingGesture)
-            if model.canForget {
-                Button("Forget everyone", role: .destructive) { confirmingForget = true }
-                    .disabled(model.isTestingGesture)
-                    .confirmationDialog("Delete everyone Earmark remembers?", isPresented: $confirmingForget) {
-                        Button("Forget everyone", role: .destructive) { Task { await model.forgetEveryone() } }
-                    } message: {
-                        Text("Their voice signatures, names and notes are deleted from this phone. Your own voice is kept.")
-                    }
-                Button("Re-record my voice") { Task { await model.rerecordVoice() } }
-                    .disabled(model.isTestingGesture)
-            }
         case .enrolling, .running:
             Button("End event", role: .destructive) { Task { await model.endEvent() } }
                 .buttonStyle(.bordered)
                 .controlSize(.large)
         case .ending:
-            ProgressView("Saving…")
+            ProgressView("Deleting…")
         }
     }
 

@@ -22,8 +22,6 @@ import Engine
         config.wearerName = "Sandy"
         let engine = VoiceEngine(config: config)
         try await engine.prepare()
-        // The real engine remembers people on disk between events; start and end with nobody.
-        _ = await engine.forgetEveryone()
 
         let collected = EventLog()
         let listener = Task { for await event in engine.events { await collected.add(event) } }
@@ -60,7 +58,6 @@ import Engine
         print("events:", events)
         #expect(events.contains { if case .whisper(let text, _) = $0 { text.contains("Priya") } else { false } })
         #expect(await engine.endEvent() == 1)
-        _ = await engine.forgetEveryone()
     }
 }
 

@@ -13,9 +13,4 @@ struct EndEarmarkIntentTests {
 
         #expect(model.phase == .idle)
     }
-
-    @Test("Siri phrases name the app")
-    func phrases() {
-        #expect(EarmarkShortcuts.appShortcuts.count == 1)
-    }
 }

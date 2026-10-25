@@ -27,8 +27,44 @@ struct EndEarmarkIntent: AppIntent {
     }
 }
 
+/// "Hey Siri, start Earmark." Opens the app and starts an event exactly like the Start button.
+struct StartEarmarkIntent: AppIntent {
+    static let title: LocalizedStringResource = "Start event"
+    static let description = IntentDescription("Opens Earmark and starts an event. You'll be asked to read a sentence.")
+    /// iOS only lets an app start the mic while it's on screen, and the wearer reads the enrollment sentence there.
+    static let openAppWhenRun = true
+
+    @Dependency private var model: AppModel
+
+    func perform() async throws -> some IntentResult {
+        await Self.start(model)
+        return .result()
+    }
+
+    /// Returns at once instead of waiting for enrollment (15 s or more), so Siri isn't left hanging.
+    /// The task is returned for tests. Separate from `perform` because `@Dependency` only resolves when the system runs the intent.
+    @MainActor
+    @discardableResult
+    static func start(_ model: AppModel) -> Task<Void, Never>? {
+        guard model.phase == .idle, !model.isTestingGesture else {
+            Logger(subsystem: "com.hari.earmark", category: "Siri").info("Start asked while an event or test is running")
+            return nil
+        }
+        return Task { await model.startEvent() }
+    }
+}
+
 nonisolated struct EarmarkShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
+        AppShortcut(
+            intent: StartEarmarkIntent(),
+            phrases: [
+                "Start \(.applicationName)",
+                "Start an event in \(.applicationName)",
+            ],
+            shortTitle: "Start event",
+            systemImageName: "play.circle"
+        )
         AppShortcut(
             intent: EndEarmarkIntent(),
             phrases: [

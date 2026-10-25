@@ -1,7 +1,7 @@
 import EarmarkShared
 import Foundation
 
-/// A saved person (PRD 8.1). Lives in memory only; "end event" wipes it.
+/// A saved person (PRD 8.1). Kept between events by `PeopleStore` until the wearer taps Forget everyone.
 struct Person: Sendable {
     let id: UUID
     var name: String?
@@ -86,6 +86,19 @@ struct PeopleBook {
         remeetGap = config.remeetGap(demoMode: demoMode)
     }
 
+    /// People from earlier events, loaded at the start of this one.
+    mutating func remember(_ saved: [Person]) {
+        people = saved + people.filter { person in !saved.contains { $0.id == person.id } }
+    }
+
+    mutating func forgetEveryone() {
+        people = []
+        unknown = []
+        resetAttempts()
+        prompts = [:]
+        lastSpoke = nil
+    }
+
     func person(_ id: UUID) -> Person? {
         people.first { $0.id == id }
     }
@@ -152,7 +165,8 @@ struct PeopleBook {
         ))
         attemptEmbeddings.append(embedding)
         if let speech { attemptSpeech.append(speech) }
-        guard attempts.count >= config.verifyChunks else { return .nothing }
+        let strongAlone = attempts.count == 1 && attempts[0].isStrongAlone(config)
+        guard attempts.count >= config.verifyChunks || strongAlone else { return .nothing }
 
         let context = VerificationContext(
             attempts: attempts,

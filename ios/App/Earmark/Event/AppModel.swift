@@ -15,6 +15,7 @@ final class AppModel {
     }
 
     static let enrollmentSeconds = 15.0
+    static let rerecordMessage = "Next Start asks you to read the sentence again."
 
     private(set) var phase: Phase = .idle
     private(set) var people: [PersonSummary] = []
@@ -30,6 +31,8 @@ final class AppModel {
 
     /// nil until Sandy's Engine package is linked. There is no stand-in engine on purpose.
     private let engine: (any EarmarkEngine)?
+    /// People and the wearer's voice, kept between events. nil until the engine is linked.
+    private let memory: (any EngineMemory)?
     private let session = AudioSessionController()
     private let whisperer = Whisperer()
     private let gestures = HeadGestureListener()
@@ -38,8 +41,9 @@ final class AppModel {
     private var eventsTask: Task<Void, Never>?
     private let logger = Logger(subsystem: "com.hari.earmark", category: "AppModel")
 
-    init(engine: (any EarmarkEngine)?) {
+    init(engine: (any EarmarkEngine)?, memory: (any EngineMemory)? = nil) {
         self.engine = engine
+        self.memory = memory
         let router = self.router
         mic = MicCapture { chunk in router.route(chunk) }
     }
@@ -66,8 +70,13 @@ final class AppModel {
         await engine.startEvent(demoMode: demoMode)
         listenForEngineEvents(engine)
 
-        phase = .enrolling
-        guard await enrollWearer(engine) else { return }
+        // The wearer reads the sentence once; after that Start goes straight to listening.
+        if await memory?.knowsWearer() == true {
+            logger.info("Wearer's voice remembered, skipping enrollment")
+        } else {
+            phase = .enrolling
+            guard await enrollWearer(engine) else { return }
+        }
         await whisperer.chime()
         router.feed(to: engine)
         phase = .running
@@ -80,13 +89,30 @@ final class AppModel {
         mic.stop()
         whisperer.stopAll()
 
-        let deleted = await engine.endEvent()
+        let remembered = await engine.endEvent()
         people = []
         statusMessage = nil
-        await say(WhisperLines.deleted(count: deleted))
+        await say(WhisperLines.remembering(count: remembered))
         session.deactivate()
         UIApplication.shared.isIdleTimerDisabled = false
         phase = .idle
+    }
+
+    var canForget: Bool { memory != nil }
+
+    /// Start screen only: deletes everyone remembered from earlier events. Keeps the wearer's voice.
+    func forgetEveryone() async {
+        guard let memory, phase == .idle, !isTestingGesture else { return }
+        let deleted = await memory.forgetEveryone()
+        logger.info("Forgot \(deleted) people")
+        statusMessage = WhisperLines.deleted(count: deleted)
+    }
+
+    /// Start screen only: the next Start asks the wearer to read the sentence again.
+    func rerecordVoice() async {
+        guard let memory, phase == .idle, !isTestingGesture else { return }
+        await memory.forgetWearer()
+        statusMessage = Self.rerecordMessage
     }
 
     /// One nod/shake with the same listener and timeout as a real prompt, so thresholds can be

@@ -23,6 +23,13 @@ struct VoiceSignature: Sendable {
         for embedding in embeddings { add(embedding) }
     }
 
+    /// Restores a saved signature (`PeopleStore`).
+    init(sum: [Float], count: Int) {
+        precondition(!sum.isEmpty, "a signature needs at least one embedding")
+        self.sum = sum
+        self.count = count
+    }
+
     mutating func add(_ embedding: [Float]) {
         // Normalize first so a loud chunk doesn't outweigh a quiet one.
         let norm = vDSP.sumOfSquares(embedding).squareRoot()

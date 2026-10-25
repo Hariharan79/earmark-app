@@ -12,6 +12,9 @@ public actor VoiceEngine: EarmarkEngine {
     private let config: EngineConfig
     private let loadModels: @Sendable () async throws -> LoadedModels
     private let verifier: any Verifier
+    /// nil in tests, so they never touch the phone's saved people.
+    private let store: PeopleStore?
+    private let wearerStore: WearerStore?
     private var modelsTask: Task<LoadedModels, any Error>?
     private let log = Logger(subsystem: "Earmark", category: "Engine")
 
@@ -36,18 +39,24 @@ public actor VoiceEngine: EarmarkEngine {
         self.init(
             config: config,
             loadModels: { try await LoadedModels.load(config.embedderKind) },
-            verifier: BackupRule(config: config)
+            verifier: BackupRule(config: config),
+            store: .standard,
+            wearerStore: .standard
         )
     }
 
     init(
         config: EngineConfig,
         loadModels: @escaping @Sendable () async throws -> LoadedModels,
-        verifier: any Verifier
+        verifier: any Verifier,
+        store: PeopleStore? = nil,
+        wearerStore: WearerStore? = nil
     ) {
         self.config = config
         self.loadModels = loadModels
         self.verifier = verifier
+        self.store = store
+        self.wearerStore = wearerStore
         book = PeopleBook(config: config, demoMode: false)
         segmenter = SpeechSegmenter(config: config)
         (events, eventSink) = AsyncStream.makeStream(of: EngineEvent.self)
@@ -69,7 +78,10 @@ public actor VoiceEngine: EarmarkEngine {
     public func prepare() async throws {
         _ = try await models()
         do {
+            let started = ContinuousClock.now
             try await Transcriber.installModelIfNeeded()
+            let seconds = Double((ContinuousClock.now - started).components.seconds)
+            log.info("Speech model ready in \(seconds, format: .fixed(precision: 0)) s")
         } catch {
             // Names can wait; voices are what matter. start() retries the download.
             log.error("Speech model install failed: \(error)")
@@ -82,7 +94,21 @@ public actor VoiceEngine: EarmarkEngine {
     public func startEvent(demoMode: Bool) async {
         await stopTranscriber()
         reset(demoMode: demoMode)
-        eventStart = Date()
+        let eventStart = Date()
+        self.eventStart = eventStart
+        do {
+            let remembered = try store?.load(eventStart: eventStart) ?? []
+            book.remember(remembered)
+            log.info("Remembering \(remembered.count) people from earlier events")
+        } catch {
+            log.error("Couldn't load saved people, starting with nobody: \(error)")
+        }
+        do {
+            wearer = try wearerStore?.load()
+            log.info("Wearer's voice \(self.wearer == nil ? "not saved yet, enrollment needed" : "remembered, skipping enrollment")")
+        } catch {
+            log.error("Couldn't load the wearer's voice, enrollment needed: \(error)")
+        }
         let transcriber = Transcriber()
         self.transcriber = transcriber
         Task { [log] in
@@ -124,9 +150,17 @@ public actor VoiceEngine: EarmarkEngine {
             if embeddings.isEmpty {
                 embeddings.append(try await models.embedder.embed(AudioLevel.peakNormalized(speechAudio)))
             }
-            wearer = VoiceSignature(embeddings)
+            let signature = VoiceSignature(embeddings)
+            wearer = signature
             log.info("Wearer enrolled from \(embeddings.count) chunks, \(speech, format: .fixed(precision: 1)) s of speech")
+            do {
+                try wearerStore?.save(signature)
+            } catch {
+                log.error("Couldn't save the wearer's voice, they'll read the sentence again next time: \(error)")
+            }
             return .success
+        } catch EngineError.modelsTimedOut {
+            return .tooNoisy(reason: "The voice models are still downloading. Stay on wifi and try again in a minute.")
         } catch {
             log.error("Enrollment failed: \(error)")
             return .tooNoisy(reason: "The voice models aren't ready. Check the internet connection and try again.")
@@ -141,6 +175,7 @@ public actor VoiceEngine: EarmarkEngine {
         guard let eventStart else { return }
         if let event = book.answer(id, answer, at: frameTime, eventStart: eventStart) {
             eventSink.yield(event)
+            savePeople()
         }
         scheduleNaming()
     }
@@ -152,12 +187,61 @@ public actor VoiceEngine: EarmarkEngine {
             .map { $0.summary(eventStart: eventStart) }
     }
 
+    /// Ends the event. Everyone met is kept for next time (`PeopleStore`). Returns how many people are remembered.
     public func endEvent() async -> Int {
+        savePeople()
         let count = book.people.count
         await stopTranscriber()
         reset(demoMode: false)
         eventStart = nil
         return count
+    }
+
+    /// Deletes everyone remembered, on disk and in memory. Returns how many people were deleted.
+    /// Not part of `EarmarkEngine`; the app calls it on the concrete engine from the start screen.
+    public func forgetEveryone() async -> Int {
+        let count: Int
+        if eventStart != nil {
+            count = book.people.count
+        } else {
+            count = (try? store?.load(eventStart: Date()).count) ?? 0
+        }
+        do {
+            try store?.delete()
+        } catch {
+            log.error("Couldn't delete saved people: \(error)")
+        }
+        book.forgetEveryone()
+        log.info("Forgot \(count) people")
+        return count
+    }
+
+    /// True once the wearer's voice is known for this event: saved from an earlier event, or just enrolled.
+    /// Call after `startEvent`. Not part of `EarmarkEngine`; the app uses it to skip enrollment.
+    public func knowsWearer() -> Bool {
+        wearer != nil
+    }
+
+    /// Deletes the wearer's saved voice, so the next event asks them to read the sentence again
+    /// (a new wearer, or the phone worn differently). Not part of `EarmarkEngine`.
+    public func forgetWearer() {
+        do {
+            try wearerStore?.delete()
+        } catch {
+            log.error("Couldn't delete the wearer's voice: \(error)")
+        }
+        wearer = nil
+        log.info("Forgot the wearer's voice")
+    }
+
+    /// Writes everyone to disk, so a crash or a rerun from Xcode doesn't lose them.
+    private func savePeople() {
+        guard let store, let eventStart else { return }
+        do {
+            try store.save(book.people, eventStart: eventStart)
+        } catch {
+            log.error("Couldn't save people: \(error)")
+        }
     }
 
     // MARK: - Pipeline
@@ -180,16 +264,46 @@ public actor VoiceEngine: EarmarkEngine {
         transcriber = nil
     }
 
+    /// The loaded models, waiting at most `modelLoadTimeout`. A slow first download keeps going in the
+    /// background after a timeout, so the next call (e.g. the wearer tapping enroll again) can pick it up.
     private func models() async throws -> LoadedModels {
-        if let modelsTask { return try await modelsTask.value }
-        let task = Task { try await loadModels() }
-        modelsTask = task
+        let task: Task<LoadedModels, any Error>
+        if let modelsTask {
+            task = modelsTask
+        } else {
+            task = Task { [loadModels, log] in
+                let started = ContinuousClock.now
+                let models = try await loadModels()
+                let seconds = Double((ContinuousClock.now - started).components.seconds)
+                log.info("Voice models loaded in \(seconds, format: .fixed(precision: 0)) s")
+                return models
+            }
+            modelsTask = task
+        }
         do {
-            return try await task.value
+            return try await Self.value(of: task, timeout: config.modelLoadTimeout)
+        } catch EngineError.modelsTimedOut {
+            log.error("Voice models still loading after \(self.config.modelLoadTimeout, format: .fixed(precision: 0)) s, still downloading in the background")
+            throw EngineError.modelsTimedOut
         } catch {
             // Let the next call retry, e.g. once wifi is back.
-            modelsTask = nil
+            if modelsTask == task { modelsTask = nil }
             throw error
+        }
+    }
+
+    /// The task's value, or `modelsTimedOut` after `timeout`. Doesn't cancel the task.
+    private static func value(of task: Task<LoadedModels, any Error>, timeout: TimeInterval) async throws -> LoadedModels {
+        let once = ResumeOnce<LoadedModels>()
+        return try await withCheckedThrowingContinuation { continuation in
+            once.set(continuation)
+            Task {
+                do { once.resume(with: .success(try await task.value)) } catch { once.resume(with: .failure(error)) }
+            }
+            Task {
+                try? await Task.sleep(for: .seconds(timeout))
+                once.resume(with: .failure(EngineError.modelsTimedOut))
+            }
         }
     }
 
@@ -244,15 +358,30 @@ public actor VoiceEngine: EarmarkEngine {
 
         let time = speech.start + speech.speechDuration
         let said = speech.start...(speech.start + AudioLevel.duration(speech.samples.count))
+        // The numbers that set fastWhisperSimilarity and the thresholds in calibration.
+        let ranking = book.ranked(embedding)
+        if let top = ranking.first {
+            let runnerUp = ranking.dropFirst().first?.similarity ?? 0
+            log.info("""
+                Closest saved person: \(top.person.name ?? "unnamed", privacy: .public) \(top.similarity, format: .fixed(precision: 2)), \
+                ahead of the next by \(top.similarity - max(runnerUp, 0), format: .fixed(precision: 2))
+                """)
+        }
         switch book.ingest(embedding, at: time, speech: said) {
         case .nothing:
             log.info("Chunk accepted, no change yet (pending, verifying, or someone already being heard)")
         case let .saved(person):
             eventSink.yield(.personSaved(person.summary(eventStart: eventStart)))
+            savePeople()
         case let .verify(context):
             let verdict = await verifier.verify(context)
             if let event = book.apply(verdict, context, at: time, eventStart: eventStart) {
                 eventSink.yield(event)
+                // Someone remembered from an earlier event isn't on the people-met list until now.
+                if case let .whisper(_, id) = event, let person = book.person(id) {
+                    eventSink.yield(.personUpdated(person.summary(eventStart: eventStart)))
+                }
+                savePeople()
             }
         }
         scheduleNaming()
@@ -308,6 +437,7 @@ public actor VoiceEngine: EarmarkEngine {
         guard event == eventID, let eventStart, let updated = book.introduce(id, introduction) else { return }
         log.info("Filled in name/note for a person: name \(updated.name == nil ? "missing" : "found"), note \(updated.note.split(separator: " ").count) words")
         eventSink.yield(.personUpdated(updated.summary(eventStart: eventStart)))
+        savePeople()
     }
 
     /// The refine window was still open when their latest chunk started, so the chunk that
@@ -327,5 +457,28 @@ public actor VoiceEngine: EarmarkEngine {
         else { return }
         lastWarningTime = time
         eventSink.yield(.warning(message: "The mic has been very quiet. Is the phone facing out?"))
+    }
+}
+
+enum EngineError: Error {
+    /// The voice models didn't finish loading within `EngineConfig.modelLoadTimeout`.
+    case modelsTimedOut
+}
+
+/// Resumes a continuation exactly once, whichever side gets there first.
+private final class ResumeOnce<Value: Sendable>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<Value, any Error>?
+
+    func set(_ continuation: CheckedContinuation<Value, any Error>) {
+        lock.withLock { self.continuation = continuation }
+    }
+
+    func resume(with result: Result<Value, any Error>) {
+        let continuation = lock.withLock {
+            defer { self.continuation = nil }
+            return self.continuation
+        }
+        continuation?.resume(with: result)
     }
 }

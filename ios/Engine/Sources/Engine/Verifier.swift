@@ -15,6 +15,11 @@ struct Attempt: Sendable {
     let margin: Float
     let band: Band
     let time: TimeInterval
+
+    /// Clear enough to whisper on this chunk alone, without waiting for a second.
+    func isStrongAlone(_ config: EngineConfig) -> Bool {
+        similarity >= config.fastWhisperSimilarity && margin >= config.fastWhisperMargin
+    }
 }
 
 /// A saved person, as the verifier sees them.
@@ -51,12 +56,14 @@ protocol Verifier: Sendable {
 }
 
 /// The on-device rule (PRD 7.3): whisper only if the last clean chunks all score HIGH
-/// for the same person and beat the runner-up by the margin. Otherwise ask.
+/// for the same person and beat the runner-up by the margin, or one chunk is strong on its own
+/// (`EngineConfig.fastWhisperSimilarity`). Otherwise ask.
 struct BackupRule: Verifier {
     let config: EngineConfig
 
     func verify(_ context: VerificationContext) -> Verdict {
         guard let last = context.attempts.last else { return .newPerson }
+        if last.isStrongAlone(config) { return .whisper(last.personID) }
         let recent = context.attempts.suffix(config.verifyChunks)
         let confident = recent.count >= config.verifyChunks && recent.allSatisfy {
             $0.personID == last.personID && $0.band == .high && $0.margin >= config.backupMargin

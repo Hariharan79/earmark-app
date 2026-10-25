@@ -211,3 +211,17 @@ private func voice(_ axis: Int, toward other: Int? = nil, by amount: Float = 0, 
         #expect(signature.count == 2)
     }
 }
+
+@Suite struct IntroductionLookbackTests {
+    @Test func readsBackForTheNameSentence() {
+        #expect(VoiceEngine.introductionStart(before: 27.7, lookback: 10, claimedEnds: []) == 17.7)
+    }
+
+    @Test func stopsAtTheWearerOrSomeoneElse() {
+        #expect(VoiceEngine.introductionStart(before: 27.7, lookback: 10, claimedEnds: [12, 22.5, 40]) == 22.5)
+    }
+
+    @Test func neverBeforeTheEventStarted() {
+        #expect(VoiceEngine.introductionStart(before: 4, lookback: 10, claimedEnds: []) == 0)
+    }
+}

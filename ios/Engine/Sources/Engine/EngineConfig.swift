@@ -82,6 +82,10 @@ public struct EngineConfig: Sendable {
     /// For someone's first this-many seconds of speech, re-read everything they've said after each
     /// chunk, and let a richer note replace a thinner one. The name never changes once set.
     public var noteRefineSpeech: TimeInterval = 40
+    /// On a first meeting, also read this many seconds before their first accepted chunk. People say
+    /// their name first, often in chunks the quality checks drop (talking over the wearer's hello,
+    /// still walking up), so without this the name sentence never reaches the name finder.
+    public var nameLookback: TimeInterval = 10
 
     // MARK: Warnings
 

@@ -28,6 +28,8 @@ public actor VoiceEngine: EarmarkEngine {
     private var lastLoudTime: TimeInterval = 0
     private var lastWarningTime: TimeInterval = -.infinity
     private var transcriber: Transcriber?
+    /// When the wearer's dropped chunks ended, so a name lookback never reaches into the wearer's own words.
+    private var wearerSpeechEnds: [TimeInterval] = []
     /// People with a name lookup already scheduled.
     private var naming: Set<UUID> = []
     /// People who spoke again while their lookup was waiting, so they get one more.
@@ -256,6 +258,7 @@ public actor VoiceEngine: EarmarkEngine {
         lastWarningTime = -.infinity
         naming = []
         namingAgain = []
+        wearerSpeechEnds = []
         eventID = UUID()
     }
 
@@ -354,6 +357,9 @@ public actor VoiceEngine: EarmarkEngine {
             wearer \(checked.wearerSimilarity ?? -9, format: .fixed(precision: 2)) → \
             \(checked.rejection?.rawValue ?? "accepted", privacy: .public)
             """)
+        if checked.rejection == .wearer {
+            wearerSpeechEnds.append(speech.start + AudioLevel.duration(speech.samples.count))
+        }
         guard checked.accepted, let embedding = checked.embedding else { return }
 
         let time = speech.start + speech.speechDuration
@@ -423,7 +429,14 @@ public actor VoiceEngine: EarmarkEngine {
 
         // First meeting: everything they've said so far, so details from later sentences count.
         // Chunks inside one sentence return the same sentence, so drop repeats.
-        let ranges = isFirstMeeting(person) ? person.speech[...] : person.speech.suffix(config.transcriptChunks)
+        var ranges = Array(isFirstMeeting(person) ? person.speech[...] : person.speech.suffix(config.transcriptChunks))
+        if isFirstMeeting(person), let first = ranges.indices.min(by: { ranges[$0].lowerBound < ranges[$1].lowerBound }) {
+            let othersEnds = book.people.filter { $0.id != id }.flatMap(\.speech).map(\.upperBound)
+            let start = Self.introductionStart(
+                before: ranges[first].lowerBound, lookback: config.nameLookback, claimedEnds: othersEnds + wearerSpeechEnds
+            )
+            ranges[first] = start...ranges[first].upperBound
+        }
         var sentences: [String] = []
         for range in ranges {
             let text = await transcriber.text(from: range.lowerBound, to: range.upperBound)
@@ -438,6 +451,13 @@ public actor VoiceEngine: EarmarkEngine {
         log.info("Filled in name/note for a person: name \(updated.name == nil ? "missing" : "found"), note \(updated.note.split(separator: " ").count) words")
         eventSink.yield(.personUpdated(updated.summary(eventStart: eventStart)))
         savePeople()
+    }
+
+    /// How far back to read for a newcomer's introduction: `lookback` before their first accepted
+    /// chunk, but never into speech already known to be the wearer's or someone else's.
+    static func introductionStart(before start: TimeInterval, lookback: TimeInterval, claimedEnds: [TimeInterval]) -> TimeInterval {
+        let claimed = claimedEnds.filter { $0 <= start }.max() ?? -.infinity
+        return max(start - lookback, claimed, 0)
     }
 
     /// The refine window was still open when their latest chunk started, so the chunk that

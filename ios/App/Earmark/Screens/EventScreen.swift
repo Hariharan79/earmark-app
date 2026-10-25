@@ -40,7 +40,6 @@ struct EventScreen: View {
                 .font(.title3)
                 .multilineTextAlignment(.center)
             Toggle("Demo mode (20 s re-meet gap)", isOn: $model.demoMode)
-            Toggle("Play out loud from the iPhone", isOn: $model.speakerMode)
             if !model.engineLinked {
                 Label("Engine not linked yet", systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.orange)

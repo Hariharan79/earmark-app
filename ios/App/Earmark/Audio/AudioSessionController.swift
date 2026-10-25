@@ -23,7 +23,6 @@ enum AudioSessionError: LocalizedError {
 }
 
 /// Owns the audio session (PRD 6.1): the iPhone mic listens, the AirPods only whisper.
-/// In speaker mode (judges' demo) the whispers play from the iPhone loudspeaker instead.
 /// Nothing else in the app should touch `AVAudioSession` configuration.
 @Observable
 @MainActor
@@ -36,7 +35,6 @@ final class AudioSessionController {
     @ObservationIgnored private let session = AVAudioSession.sharedInstance()
     @ObservationIgnored private var observers: [any NSObjectProtocol] = []
     @ObservationIgnored private var isActive = false
-    @ObservationIgnored private var useSpeaker = false
 
     init() {
         routeDescription = Self.describe(session.currentRoute)
@@ -46,15 +44,12 @@ final class AudioSessionController {
         await AVAudioApplication.requestRecordPermission()
     }
 
-    func activate(speaker: Bool = false) throws {
-        useSpeaker = speaker
+    func activate() throws {
         do {
             // A2DP only: .allowBluetoothHFP would put the AirPods in call mode and take over the mic,
             // and .bluetoothHighQualityRecording would make the AirPods the mic. Voice processing stays
             // off (it's an engine setting, and MicCapture never enables it).
-            // .defaultToSpeaker only matters without AirPods: otherwise output goes to the earpiece.
-            let options: AVAudioSession.CategoryOptions = speaker ? [.allowBluetoothA2DP, .defaultToSpeaker] : [.allowBluetoothA2DP]
-            try session.setCategory(.playAndRecord, mode: .default, options: options)
+            try session.setCategory(.playAndRecord, mode: .default, options: [.allowBluetoothA2DP])
         } catch {
             throw AudioSessionError.configurationFailed(error)
         }
@@ -66,17 +61,12 @@ final class AudioSessionController {
         isActive = true
         startObserving()
         try preferBuiltInMic()
-        applySpeakerOverride()
         refreshRouteDescription()
     }
 
     func deactivate() {
         stopObserving()
         isActive = false
-        if useSpeaker {
-            try? session.overrideOutputAudioPort(.none)
-            useSpeaker = false
-        }
         do {
             try session.setActive(false, options: .notifyOthersOnDeactivation)
         } catch {
@@ -99,17 +89,6 @@ final class AudioSessionController {
             try session.setPreferredInput(builtInMic)
         } catch {
             throw AudioSessionError.preferredInputFailed(error)
-        }
-    }
-
-    /// Speaker mode: the loudspeaker even with AirPods connected (they stay connected for head
-    /// motion). A route change can drop the override, so it's applied again after each one.
-    private func applySpeakerOverride() {
-        guard useSpeaker, session.currentRoute.outputs.first?.portType != .builtInSpeaker else { return }
-        do {
-            try session.overrideOutputAudioPort(.speaker)
-        } catch {
-            Self.logger.error("Switching output to the loudspeaker failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -152,7 +131,6 @@ final class AudioSessionController {
         } catch {
             Self.logger.error("Re-applying built-in mic after route change failed: \(error.localizedDescription, privacy: .public)")
         }
-        applySpeakerOverride()
         refreshRouteDescription()
         Self.logger.info("Route changed: \(self.routeDescription, privacy: .public)")
     }
@@ -162,7 +140,6 @@ final class AudioSessionController {
         do {
             try session.setActive(true)
             try preferBuiltInMic()
-            applySpeakerOverride()
         } catch {
             Self.logger.error("Re-activating after interruption failed: \(error.localizedDescription, privacy: .public)")
         }

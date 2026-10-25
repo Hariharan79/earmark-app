@@ -13,8 +13,6 @@ nonisolated final class ChunkRouter: Sendable {
     private struct State {
         var mode: Mode = .off
         var enrollment: [Float] = []
-        /// Holds live audio back from the engine without leaving feeding mode.
-        var paused = false
     }
 
     private let state = Mutex(State())
@@ -34,15 +32,6 @@ nonisolated final class ChunkRouter: Sendable {
             return continuation
         }
         pending?.resume(returning: [])
-    }
-
-    /// While paused, chunks that would go to the engine are dropped. Enrollment isn't affected.
-    func pause() {
-        state.withLock { $0.paused = true }
-    }
-
-    func resume() {
-        state.withLock { $0.paused = false }
     }
 
     func feed(to engine: any EarmarkEngine) {
@@ -70,7 +59,7 @@ nonisolated final class ChunkRouter: Sendable {
             case .off:
                 return .none
             case let .feeding(engine):
-                return state.paused ? .none : .feed(engine)
+                return .feed(engine)
             case let .enrolling(target, continuation):
                 state.enrollment.append(contentsOf: chunk.samples.prefix(target - state.enrollment.count))
                 guard state.enrollment.count >= target else { return .none }

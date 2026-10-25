@@ -30,8 +30,8 @@ struct EndEarmarkIntent: AppIntent {
 /// "Hey Siri, start Earmark." Opens the app and starts an event exactly like the Start button.
 struct StartEarmarkIntent: AppIntent {
     static let title: LocalizedStringResource = "Start event"
-    static let description = IntentDescription("Opens Earmark and starts an event. You'll be asked to read a sentence.")
-    /// iOS only lets an app start the mic while it's on screen, and the wearer reads the enrollment sentence there.
+    static let description = IntentDescription("Opens Earmark and starts an event. The first time, you'll be asked to read a sentence.")
+    /// iOS only lets an app start the mic while it's on screen, and the wearer reads the enrollment sentence there (first event only).
     static let openAppWhenRun = true
 
     @Dependency private var model: AppModel

@@ -16,7 +16,7 @@ struct EarmarkApp: App {
         config.wearerName = Self.wearerName
         let engine = VoiceEngine(config: config)
         self.engine = engine
-        let model = AppModel(engine: engine, forget: { await engine.forgetEveryone() })
+        let model = AppModel(engine: engine, memory: engine)
         _model = State(initialValue: model)
         // "Hey Siri, end Earmark" (EndEarmarkIntent) ends this same event.
         AppDependencyManager.shared.add(dependency: model)

@@ -165,7 +165,8 @@ struct PeopleBook {
         ))
         attemptEmbeddings.append(embedding)
         if let speech { attemptSpeech.append(speech) }
-        guard attempts.count >= config.verifyChunks else { return .nothing }
+        let strongAlone = attempts.count == 1 && attempts[0].isStrongAlone(config)
+        guard attempts.count >= config.verifyChunks || strongAlone else { return .nothing }
 
         let context = VerificationContext(
             attempts: attempts,

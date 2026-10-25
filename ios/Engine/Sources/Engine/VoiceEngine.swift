@@ -14,6 +14,7 @@ public actor VoiceEngine: EarmarkEngine {
     private let verifier: any Verifier
     /// nil in tests, so they never touch the phone's saved people.
     private let store: PeopleStore?
+    private let wearerStore: WearerStore?
     private var modelsTask: Task<LoadedModels, any Error>?
     private let log = Logger(subsystem: "Earmark", category: "Engine")
 
@@ -39,7 +40,8 @@ public actor VoiceEngine: EarmarkEngine {
             config: config,
             loadModels: { try await LoadedModels.load(config.embedderKind) },
             verifier: BackupRule(config: config),
-            store: .standard
+            store: .standard,
+            wearerStore: .standard
         )
     }
 
@@ -47,12 +49,14 @@ public actor VoiceEngine: EarmarkEngine {
         config: EngineConfig,
         loadModels: @escaping @Sendable () async throws -> LoadedModels,
         verifier: any Verifier,
-        store: PeopleStore? = nil
+        store: PeopleStore? = nil,
+        wearerStore: WearerStore? = nil
     ) {
         self.config = config
         self.loadModels = loadModels
         self.verifier = verifier
         self.store = store
+        self.wearerStore = wearerStore
         book = PeopleBook(config: config, demoMode: false)
         segmenter = SpeechSegmenter(config: config)
         (events, eventSink) = AsyncStream.makeStream(of: EngineEvent.self)
@@ -99,6 +103,12 @@ public actor VoiceEngine: EarmarkEngine {
         } catch {
             log.error("Couldn't load saved people, starting with nobody: \(error)")
         }
+        do {
+            wearer = try wearerStore?.load()
+            log.info("Wearer's voice \(self.wearer == nil ? "not saved yet, enrollment needed" : "remembered, skipping enrollment")")
+        } catch {
+            log.error("Couldn't load the wearer's voice, enrollment needed: \(error)")
+        }
         let transcriber = Transcriber()
         self.transcriber = transcriber
         Task { [log] in
@@ -140,8 +150,14 @@ public actor VoiceEngine: EarmarkEngine {
             if embeddings.isEmpty {
                 embeddings.append(try await models.embedder.embed(AudioLevel.peakNormalized(speechAudio)))
             }
-            wearer = VoiceSignature(embeddings)
+            let signature = VoiceSignature(embeddings)
+            wearer = signature
             log.info("Wearer enrolled from \(embeddings.count) chunks, \(speech, format: .fixed(precision: 1)) s of speech")
+            do {
+                try wearerStore?.save(signature)
+            } catch {
+                log.error("Couldn't save the wearer's voice, they'll read the sentence again next time: \(error)")
+            }
             return .success
         } catch EngineError.modelsTimedOut {
             return .tooNoisy(reason: "The voice models are still downloading. Stay on wifi and try again in a minute.")
@@ -198,6 +214,24 @@ public actor VoiceEngine: EarmarkEngine {
         book.forgetEveryone()
         log.info("Forgot \(count) people")
         return count
+    }
+
+    /// True once the wearer's voice is known for this event: saved from an earlier event, or just enrolled.
+    /// Call after `startEvent`. Not part of `EarmarkEngine`; the app uses it to skip enrollment.
+    public func knowsWearer() -> Bool {
+        wearer != nil
+    }
+
+    /// Deletes the wearer's saved voice, so the next event asks them to read the sentence again
+    /// (a new wearer, or the phone worn differently). Not part of `EarmarkEngine`.
+    public func forgetWearer() {
+        do {
+            try wearerStore?.delete()
+        } catch {
+            log.error("Couldn't delete the wearer's voice: \(error)")
+        }
+        wearer = nil
+        log.info("Forgot the wearer's voice")
     }
 
     /// Writes everyone to disk, so a crash or a rerun from Xcode doesn't lose them.
@@ -324,6 +358,15 @@ public actor VoiceEngine: EarmarkEngine {
 
         let time = speech.start + speech.speechDuration
         let said = speech.start...(speech.start + AudioLevel.duration(speech.samples.count))
+        // The numbers that set fastWhisperSimilarity and the thresholds in calibration.
+        let ranking = book.ranked(embedding)
+        if let top = ranking.first {
+            let runnerUp = ranking.dropFirst().first?.similarity ?? 0
+            log.info("""
+                Closest saved person: \(top.person.name ?? "unnamed", privacy: .public) \(top.similarity, format: .fixed(precision: 2)), \
+                ahead of the next by \(top.similarity - max(runnerUp, 0), format: .fixed(precision: 2))
+                """)
+        }
         switch book.ingest(embedding, at: time, speech: said) {
         case .nothing:
             log.info("Chunk accepted, no change yet (pending, verifying, or someone already being heard)")

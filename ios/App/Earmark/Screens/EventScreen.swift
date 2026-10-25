@@ -81,8 +81,10 @@ struct EventScreen: View {
                     .confirmationDialog("Delete everyone Earmark remembers?", isPresented: $confirmingForget) {
                         Button("Forget everyone", role: .destructive) { Task { await model.forgetEveryone() } }
                     } message: {
-                        Text("Their voice signatures, names and notes are deleted from this phone.")
+                        Text("Their voice signatures, names and notes are deleted from this phone. Your own voice is kept.")
                     }
+                Button("Re-record my voice") { Task { await model.rerecordVoice() } }
+                    .disabled(model.isTestingGesture)
             }
         case .enrolling, .running:
             Button("End event", role: .destructive) { Task { await model.endEvent() } }

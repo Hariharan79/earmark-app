@@ -65,13 +65,12 @@ private func voice(_ axis: Int, dims: Int = 8) -> [Float] {
         var book = PeopleBook(config: EngineConfig(), demoMode: true)
         book.remember(try store.load(eventStart: nextEvent))
 
-        // Talks twice in the new event: a returning voice, not a new person.
-        guard case .nothing = book.ingest(voice(0), at: 5) else { Issue.record("decided after one chunk"); return }
-        guard case let .verify(context) = book.ingest(voice(0), at: 9) else { Issue.record("no decision"); return }
+        // Talks in the new event: a returning voice, not a new person.
+        guard case let .verify(context) = book.ingest(voice(0), at: 5) else { Issue.record("no decision"); return }
         let id = book.people[0].id
         #expect(BackupRule(config: EngineConfig()).verify(context) == .whisper(id))
         guard case .whisper(text: "That's Priya, robotics at Stanford.", personID: id) =
-            book.apply(.whisper(id), context, at: 9, eventStart: nextEvent)
+            book.apply(.whisper(id), context, at: 5, eventStart: nextEvent)
         else { Issue.record("wrong whisper"); return }
         #expect(book.people.count == 1)
     }

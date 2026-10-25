@@ -32,6 +32,10 @@ xcodebuild -project ios/Earmark.xcodeproj -scheme Earmark \
 
 People are kept between events: the engine saves each person's voice signature, name, note and last-heard time (never audio) to `Application Support/Earmark/people.json` (`PeopleStore`), after every save or update and at End. The next event loads them, so someone met days ago gets "That's ___" when they talk. **Forget everyone** on the start screen deletes the file (`VoiceEngine.forgetEveryone()`, passed into `AppModel` because it isn't part of `EarmarkEngine`). Rerunning from Xcode keeps them; deleting the app removes them.
 
+**The wearer reads the sentence once.** Their voice signature is saved to `Earmark/wearer.json` (`WearerStore`, separate from people), and later Starts skip straight to the chime and listening. Forget everyone keeps it. **Re-record my voice** on the start screen deletes it, so the next Start asks for the sentence again; use it when the wearer changes or the phone is worn differently.
+
+**Fast whisper.** A returning person whose first chunk scores at least `fastWhisperSimilarity` (0.65), and at least `fastWhisperMargin` (0.20) ahead of the next person, is whispered after one chunk (~4 s) instead of two (~8 s). These are starting guesses: each accepted chunk logs `Closest saved person: <name> <score>, ahead of the next by <margin>`. Set the bar above the highest score a wrong person gets in rehearsal, or set it above 1 to turn the fast whisper off.
+
 **"Hey Siri, start Earmark"** (also "Start an event in Earmark") opens the app and starts an event like the Start button; the phone must be unlocked, since iOS only starts the mic with the app on screen. It does nothing if an event or the nod test is already running.
 
 **"Hey Siri, end Earmark"** (also "Stop Earmark", "End the event in Earmark") runs `EndEarmarkIntent` in `Siri/EarmarkIntents.swift`, which calls the same `AppModel.endEvent` as the button. Siri itself says nothing; the AirPods whisper "Remembering N people". The phrases register when the app is installed and launched once. If Siri doesn't know them, open the Shortcuts app once, or check Settings → Siri → Earmark.

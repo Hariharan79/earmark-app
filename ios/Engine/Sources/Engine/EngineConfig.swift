@@ -16,6 +16,12 @@ public struct EngineConfig: Sendable {
     public var verifyChunks = 2
     /// The top person must beat the second-closest by this much to whisper.
     public var backupMargin: Float = 0.10
+    /// One chunk at least this close to a returning person, and at least `fastWhisperMargin` ahead of
+    /// the runner-up, is enough to whisper: about 4 s sooner than waiting for a second chunk.
+    /// Starting guess. Calibration should put it above the highest score a wrong person ever gets.
+    /// Set it above 1 to always wait for two chunks.
+    public var fastWhisperSimilarity: Float = 0.65
+    public var fastWhisperMargin: Float = 0.20
     /// Attempts older than this are forgotten, so two chunks minutes apart don't count as "in a row".
     public var attemptWindow: TimeInterval = 30
 

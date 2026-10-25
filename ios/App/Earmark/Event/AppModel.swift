@@ -15,6 +15,8 @@ final class AppModel {
     }
 
     static let enrollmentSeconds = 15.0
+    /// Speaker mode: how long the mic stays held back after a whisper, for the room's echo.
+    static let speakerEchoTail = Duration.milliseconds(300)
     static let rerecordMessage = "Next Start asks you to read the sentence again."
 
     private(set) var phase: Phase = .idle
@@ -23,6 +25,8 @@ final class AppModel {
     /// Last thing worth showing on screen (warnings, errors, "Is this Priya?").
     private(set) var statusMessage: String?
     var demoMode = true
+    /// Whispers play out loud from the iPhone so a room can hear them. Read at Start.
+    var speakerMode = false
     private(set) var isTestingGesture = false
 
     var routeDescription: String { session.routeDescription }
@@ -55,7 +59,7 @@ final class AppModel {
             return
         }
         do {
-            try session.activate()
+            try session.activate(speaker: speakerMode)
             try mic.start()
         } catch {
             logger.error("Couldn't start audio: \(error.localizedDescription)")
@@ -124,7 +128,7 @@ final class AppModel {
         isTestingGesture = true
         defer { isTestingGesture = false }
         do {
-            try session.activate()
+            try session.activate(speaker: speakerMode)
         } catch {
             logger.error("Couldn't start audio for the gesture test: \(error.localizedDescription)")
             statusMessage = "Couldn't start audio: \(error.localizedDescription)"
@@ -200,7 +204,7 @@ final class AppModel {
             await engine.answerPrompt(id: promptID, answer: answer)
         case let .warning(message):
             statusMessage = message
-            await whisperer.chime()
+            await withMicHeldBack { await whisperer.chime() }
         }
     }
 
@@ -213,7 +217,17 @@ final class AppModel {
             logger.error("Whisper didn't report finishing within \(cap); moving on")
             whisperer.stopAll()  // releases the stuck speak() below
         }
-        await whisperer.speak(text)
+        await withMicHeldBack { await whisperer.speak(text) }
         watchdog.cancel()
+    }
+
+    /// In speaker mode the iPhone mic hears every whisper, and the engine would take it for someone
+    /// talking. So live audio is held back while it plays and for a short echo tail after.
+    private func withMicHeldBack(_ play: () async -> Void) async {
+        guard speakerMode else { return await play() }
+        router.pause()
+        await play()
+        try? await Task.sleep(for: Self.speakerEchoTail)
+        router.resume()
     }
 }

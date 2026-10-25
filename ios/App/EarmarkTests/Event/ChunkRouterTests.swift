@@ -1,5 +1,6 @@
 import EarmarkShared
 import Foundation
+import Synchronization
 import Testing
 @testable import Earmark
 
@@ -48,6 +49,19 @@ struct ChunkRouterTests {
         #expect(router.enrollmentProgress == 0)
     }
 
+    @Test("Paused feeding drops chunks until resumed")
+    func pauseHoldsBackFeeding() {
+        let engine = CountingEngine()
+        router.feed(to: engine)
+        router.route(chunk(10))
+        router.pause()
+        router.route(chunk(10))
+        router.route(chunk(10))
+        router.resume()
+        router.route(chunk(10))
+        #expect(engine.fed.withLock { $0 } == 2)
+    }
+
     /// recordEnrollment registers itself asynchronously; nudge it with an empty chunk until it's listening.
     private func waitUntilEnrolling() async {
         while true {
@@ -56,6 +70,18 @@ struct ChunkRouterTests {
             await Task.yield()
         }
     }
+}
+
+/// Counts fed chunks; everything else is a no-op.
+private final class CountingEngine: EarmarkEngine {
+    let fed = Mutex(0)
+    let events = AsyncStream<EngineEvent> { _ in }
+    func startEvent(demoMode: Bool) async {}
+    func enrollWearer(samples: [Float]) async -> EnrollmentResult { .success }
+    func feed(_ chunk: AudioChunk) { fed.withLock { $0 += 1 } }
+    func answerPrompt(id: PromptID, answer: PromptAnswer) async {}
+    func listPeople() async -> [PersonSummary] { [] }
+    func endEvent() async -> Int { 0 }
 }
 
 struct PeopleRosterTests {

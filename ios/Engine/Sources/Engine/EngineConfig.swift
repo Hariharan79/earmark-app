@@ -86,6 +86,9 @@ public struct EngineConfig: Sendable {
     // MARK: Models
 
     public var embedderKind: EmbedderKind = .wespeaker
+    /// Stop waiting for the voice models after this long (the first run downloads them). The download
+    /// keeps going in the background; enrollment says "still downloading" instead of hanging.
+    public var modelLoadTimeout: TimeInterval = 60
 
     public init() {}
 

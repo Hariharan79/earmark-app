@@ -74,7 +74,10 @@ public actor VoiceEngine: EarmarkEngine {
     public func prepare() async throws {
         _ = try await models()
         do {
+            let started = ContinuousClock.now
             try await Transcriber.installModelIfNeeded()
+            let seconds = Double((ContinuousClock.now - started).components.seconds)
+            log.info("Speech model ready in \(seconds, format: .fixed(precision: 0)) s")
         } catch {
             // Names can wait; voices are what matter. start() retries the download.
             log.error("Speech model install failed: \(error)")
@@ -140,6 +143,8 @@ public actor VoiceEngine: EarmarkEngine {
             wearer = VoiceSignature(embeddings)
             log.info("Wearer enrolled from \(embeddings.count) chunks, \(speech, format: .fixed(precision: 1)) s of speech")
             return .success
+        } catch EngineError.modelsTimedOut {
+            return .tooNoisy(reason: "The voice models are still downloading. Stay on wifi and try again in a minute.")
         } catch {
             log.error("Enrollment failed: \(error)")
             return .tooNoisy(reason: "The voice models aren't ready. Check the internet connection and try again.")
@@ -225,16 +230,46 @@ public actor VoiceEngine: EarmarkEngine {
         transcriber = nil
     }
 
+    /// The loaded models, waiting at most `modelLoadTimeout`. A slow first download keeps going in the
+    /// background after a timeout, so the next call (e.g. the wearer tapping enroll again) can pick it up.
     private func models() async throws -> LoadedModels {
-        if let modelsTask { return try await modelsTask.value }
-        let task = Task { try await loadModels() }
-        modelsTask = task
+        let task: Task<LoadedModels, any Error>
+        if let modelsTask {
+            task = modelsTask
+        } else {
+            task = Task { [loadModels, log] in
+                let started = ContinuousClock.now
+                let models = try await loadModels()
+                let seconds = Double((ContinuousClock.now - started).components.seconds)
+                log.info("Voice models loaded in \(seconds, format: .fixed(precision: 0)) s")
+                return models
+            }
+            modelsTask = task
+        }
         do {
-            return try await task.value
+            return try await Self.value(of: task, timeout: config.modelLoadTimeout)
+        } catch EngineError.modelsTimedOut {
+            log.error("Voice models still loading after \(self.config.modelLoadTimeout, format: .fixed(precision: 0)) s, still downloading in the background")
+            throw EngineError.modelsTimedOut
         } catch {
             // Let the next call retry, e.g. once wifi is back.
-            modelsTask = nil
+            if modelsTask == task { modelsTask = nil }
             throw error
+        }
+    }
+
+    /// The task's value, or `modelsTimedOut` after `timeout`. Doesn't cancel the task.
+    private static func value(of task: Task<LoadedModels, any Error>, timeout: TimeInterval) async throws -> LoadedModels {
+        let once = ResumeOnce<LoadedModels>()
+        return try await withCheckedThrowingContinuation { continuation in
+            once.set(continuation)
+            Task {
+                do { once.resume(with: .success(try await task.value)) } catch { once.resume(with: .failure(error)) }
+            }
+            Task {
+                try? await Task.sleep(for: .seconds(timeout))
+                once.resume(with: .failure(EngineError.modelsTimedOut))
+            }
         }
     }
 
@@ -299,6 +334,10 @@ public actor VoiceEngine: EarmarkEngine {
             let verdict = await verifier.verify(context)
             if let event = book.apply(verdict, context, at: time, eventStart: eventStart) {
                 eventSink.yield(event)
+                // Someone remembered from an earlier event isn't on the people-met list until now.
+                if case let .whisper(_, id) = event, let person = book.person(id) {
+                    eventSink.yield(.personUpdated(person.summary(eventStart: eventStart)))
+                }
                 savePeople()
             }
         }
@@ -375,5 +414,28 @@ public actor VoiceEngine: EarmarkEngine {
         else { return }
         lastWarningTime = time
         eventSink.yield(.warning(message: "The mic has been very quiet. Is the phone facing out?"))
+    }
+}
+
+enum EngineError: Error {
+    /// The voice models didn't finish loading within `EngineConfig.modelLoadTimeout`.
+    case modelsTimedOut
+}
+
+/// Resumes a continuation exactly once, whichever side gets there first.
+private final class ResumeOnce<Value: Sendable>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<Value, any Error>?
+
+    func set(_ continuation: CheckedContinuation<Value, any Error>) {
+        lock.withLock { self.continuation = continuation }
+    }
+
+    func resume(with result: Result<Value, any Error>) {
+        let continuation = lock.withLock {
+            defer { self.continuation = nil }
+            return self.continuation
+        }
+        continuation?.resume(with: result)
     }
 }

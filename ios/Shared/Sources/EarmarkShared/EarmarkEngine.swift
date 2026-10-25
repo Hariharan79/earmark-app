@@ -26,6 +26,7 @@ public protocol EarmarkEngine: Sendable {
     /// For the people-met screen.
     func listPeople() async -> [PersonSummary]
 
-    /// Deletes the event and everyone in it. Returns how many people were deleted.
+    /// Ends the event. Returns how many people are remembered. Everyone met is kept for the next
+    /// event; `VoiceEngine.forgetEveryone()` (not part of this protocol) deletes them.
     func endEvent() async -> Int
 }

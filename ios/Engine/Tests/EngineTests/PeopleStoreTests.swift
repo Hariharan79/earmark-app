@@ -9,8 +9,9 @@ private func voice(_ axis: Int, dims: Int = 8) -> [Float] {
 }
 
 @Suite struct PeopleStoreTests {
+    /// With a space, like the real "Library/Application Support" on the phone and the Mac.
     let url = FileManager.default.temporaryDirectory
-        .appending(path: "earmark-\(UUID().uuidString)/people.json")
+        .appending(path: "earmark-\(UUID().uuidString)/Application Support/people.json")
 
     private func person(name: String?, note: String, lastHeard: TimeInterval) -> Person {
         Person(
@@ -47,7 +48,10 @@ private func voice(_ axis: Int, dims: Int = 8) -> [Float] {
     @Test func deleteForgetsEveryone() throws {
         let store = PeopleStore(url: url)
         try store.save([person(name: nil, note: "", lastHeard: 5)], eventStart: Date())
+        #expect(FileManager.default.fileExists(atPath: url.path(percentEncoded: false)))
         try store.delete()
+        // Gone from disk, not just unreadable: Forget everyone is a privacy promise.
+        #expect(!FileManager.default.fileExists(atPath: url.path(percentEncoded: false)))
         #expect(try store.load(eventStart: Date()).isEmpty)
         try store.delete()  // nothing there is fine too
     }

@@ -22,7 +22,7 @@ struct PeopleStore: Sendable {
 
     /// Everyone saved so far, with their times moved onto this event's clock.
     func load(eventStart: Date) throws -> [Person] {
-        guard FileManager.default.fileExists(atPath: url.path()) else { return [] }
+        guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else { return [] }
         let saved = try JSONDecoder().decode([Saved].self, from: Data(contentsOf: url))
         return saved.filter { !$0.signatureSum.isEmpty }.map {
             Person(
@@ -54,7 +54,7 @@ struct PeopleStore: Sendable {
     }
 
     func delete() throws {
-        guard FileManager.default.fileExists(atPath: url.path()) else { return }
+        guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else { return }
         try FileManager.default.removeItem(at: url)
     }
 }
